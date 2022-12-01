@@ -1,0 +1,15 @@
+{
+  "name": "@beyond-js/config",
+  "author": "BeyondJS",
+  "email": "hello@beyondjs.com",
+  "version": "0.0.1",
+  "license": "MIT",
+  "repository": "https://github.com/beyondjs/config",
+  "exports": {
+    ".": "./index.js"
+  },
+  "dependencies": {
+    "@beyond-js/equal": "~0.0.1",
+    "@beyond-js/dynamic-processor": "~0.0.1"
+  }
+}
