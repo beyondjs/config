@@ -1,5 +1,5 @@
-const DynamicProcessor = require('beyond/utils/dynamic-processor');
-const fs = require('beyond/utils/fs');
+const DynamicProcessor = require('@beyond-js/dynamic-processor');
+const fs = require('@beyond-js/fs');
 const chokidar = require('chokidar');
 
 module.exports = class extends DynamicProcessor() {

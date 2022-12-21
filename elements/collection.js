@@ -1,4 +1,4 @@
-const DynamicProcessor = require('beyond/utils/dynamic-processor');
+const DynamicProcessor = require('@beyond-js/dynamic-processor');
 
 module.exports = class extends DynamicProcessor(Map) {
     get dp() {
