@@ -1,5 +1,6 @@
 const DynamicProcessor = require('@beyond-js/dynamic-processor')();
 const equal = require('@beyond-js/equal');
+const PropertyFile = require('./file');
 
 // The autoincrement is just to have an id in the config objects that is useful in development to trace the code
 let autoincrement = 0;
@@ -57,6 +58,8 @@ module.exports = class extends DynamicProcessor {
     get type() {
         return this.#type;
     }
+
+    #file;
 
     // The original configured data
     // (can be the string that points to the configuration file, an object, or an array of configurations)
@@ -144,9 +147,9 @@ module.exports = class extends DynamicProcessor {
     _prepared() {
         // Unregister file child if it has changed
         (() => {
-            if (!this.children.has('file')) return;
+            if (!this.#file) return;
 
-            const file = this.children.get('file').child;
+            const file = this.#file;
             const root = this.#parent ? this.#parent.path : this.#rootPath;
             if (file.root === root || file.relative === this.#data) return;
 
@@ -156,10 +159,10 @@ module.exports = class extends DynamicProcessor {
 
         // Register file child if it is not previously registered
         (() => {
-            if (this.children.has('file') || typeof this.#data !== 'string') return;
+            if (this.#file || typeof this.#data !== 'string') return;
 
             const root = this.#parent ? this.#parent.path : this.#rootPath;
-            const file = new (require('./file'))(root, this.#data);
+            const file = this.#file = new PropertyFile(root, this.#data);
             this.children.register(new Map([['file', {child: file}]]));
         })();
     }
@@ -177,7 +180,7 @@ module.exports = class extends DynamicProcessor {
             return done({value: this.#data});
         }
         else if (typeof this.#data === 'string') {
-            const file = this.children.get('file').child;
+            const file = this.#file;
             const {errors, value} = file;
             return done({errors, value});
         }
@@ -186,5 +189,9 @@ module.exports = class extends DynamicProcessor {
                 `a string or undefined, but it is "${typeof this.#data}"`;
             return done({errors: [error]});
         }
+    }
+
+    destroy() {
+        this.#file?.destroy();
     }
 }
