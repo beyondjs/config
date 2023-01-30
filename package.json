@@ -11,6 +11,8 @@
   "dependencies": {
     "@beyond-js/equal": "~0.0.1",
     "@beyond-js/dynamic-processor": "^0.0.2",
-    "@beyond-js/fs": "^0.0.1"
+    "@beyond-js/fs": "^0.0.1",
+    "colors": "^1.4.0",
+    "chokidar": "^3.5.3"
   }
 }
