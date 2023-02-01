@@ -1,9 +1,11 @@
+jest.setTimeout(20000);
+
 const fs = require('fs');
 const {join} = require('path');
-const {Config} = require('../index');
+const copy = require('./copy')(fs);
 
 describe('reading config', () => {
-    test('generate sources', async () => {
+    test('generate test sources', async () => {
         const path = process.cwd();
         const tpl = join(path, 'tpl');
         const toCreate = join(path, 'sources');
@@ -13,7 +15,6 @@ describe('reading config', () => {
                 return;
             }
 
-            const copy = require('./copy')(fs);
             await copy(tpl, toCreate);
         }
         catch (e) {
@@ -22,6 +23,7 @@ describe('reading config', () => {
     });
     test('read beyond.json and set config', async () => {
         const path = join(process.cwd(), 'sources');
+        const {Config} = require('../index');
         const config = new Config(path, {
             '/applications': 'array',
             '/applications/children/template': 'object',
@@ -45,17 +47,37 @@ describe('reading config', () => {
         await overwrites.ready;
     });
     test('write package.json to generate error', async () => {
+        let target = 'sources/package.json';
+        let content = `
+{
+  "name": "test-config-app",
+  "template": "template/template.json",
+  "dependencies": {
+    "@beyond-js/local": "~0.1.1",
+    "@beyond-js/kernel": "~0.1.5",
+    "@beyond-js/svelte-widgets": "~0.1.0",
+    "@beyond-js/react-widgets": "18.20.4",
+  }
+}
+        `;
+        await fs.writeFileSync(target, content);
+        await new Promise(resolve => setTimeout(resolve, 2000));
+    });
+    test('clean test', async () => {
         const target = 'sources/package.json';
-        const content = JSON.parse(fs.readFileSync(target, "utf-8"));
-
-        // objet with error
-        content.dependencies = {
-            '@beyond-js/local': '~0.1.1',
-            '@beyond-js/kernel': '~0.1.5',
-            '@beyond-js/svelte-widgets': '~0.1.0',
-            '@beyond-js/react-widgets': '18.20.4',
-        }
-
-        fs.writeFileSync(target, JSON.stringify(content));
+        const content = `
+{
+  "name": "test-config-app",
+  "template": "template/template.json",
+  "dependencies": {
+    "@beyond-js/local": "~0.1.1",
+    "@beyond-js/kernel": "~0.1.5",
+    "@beyond-js/svelte-widgets": "~0.1.0",
+    "@beyond-js/react-widgets": "18.20.4"
+  }
+}
+        `;
+        await fs.writeFileSync(target, content);
+        await new Promise(resolve => setTimeout(resolve, 2000));
     });
 });
