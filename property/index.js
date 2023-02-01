@@ -153,8 +153,9 @@ module.exports = class extends DynamicProcessor {
             const root = this.#parent ? this.#parent.path : this.#rootPath;
             if (file.root === root || file.relative === this.#data) return;
 
-            file.destroy();
             this.children.unregister(['file']);
+            this.#file = void 0;
+            file.destroy();
         })();
 
         // Register file child if it is not previously registered
