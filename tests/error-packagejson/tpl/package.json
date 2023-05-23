@@ -1,0 +1,7 @@
+{
+  "name": "test-config-app",
+  "template": "template/template.json",
+  "dependencies": {
+    "@beyond-js/local": "~0.1.1"
+  }
+}

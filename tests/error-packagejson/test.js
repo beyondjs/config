@@ -14,7 +14,6 @@ describe('reading config', () => {
                 console.error('template directory not found');
                 return;
             }
-
             await copy(tpl, toCreate);
         }
         catch (e) {
@@ -23,7 +22,7 @@ describe('reading config', () => {
     });
     test('read beyond.json and set config', async () => {
         const path = join(process.cwd(), 'sources');
-        const {Config} = require('../index');
+        const {Config} = require('../../index');
         const config = new Config(path, {
             '/applications': 'array',
             '/applications/children/template': 'object',
@@ -49,16 +48,13 @@ describe('reading config', () => {
     test('write package.json to generate error', async () => {
         let target = 'sources/package.json';
         let content = `
-{
-  "name": "test-config-app",
-  "template": "template/template.json",
-  "dependencies": {
-    "@beyond-js/local": "~0.1.1",
-    "@beyond-js/kernel": "~0.1.5",
-    "@beyond-js/svelte-widgets": "~0.1.0",
-    "@beyond-js/react-widgets": "18.20.4",
-  }
-}
+            {
+              "name": "test-config-app",
+              "template": "template/template.json",
+              "dependencies": {
+                "@beyond-js/local": "~0.1.1",
+              }
+            }
         `;
         await fs.writeFileSync(target, content);
         await new Promise(resolve => setTimeout(resolve, 2000));
