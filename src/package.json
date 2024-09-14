@@ -1,10 +1,16 @@
 {
 	"name": "@beyond-js/config",
-	"author": "BeyondJS",
-	"email": "hello@beyondjs.com",
-	"version": "0.0.4",
+	"version": "0.0.5",
 	"license": "MIT",
-	"repository": "https://github.com/beyondjs/config",
+	"author": {
+		"name": "BeyondJS",
+		"email": "hello@beyondjs.com"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/beyondjs/config.git"
+	},
+	"homepage": "https://github.com/beyondjs/config#readme",
 	"exports": {
 		".": "./index.js"
 	},
