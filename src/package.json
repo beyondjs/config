@@ -11,13 +11,10 @@
 		"url": "git+https://github.com/beyondjs/config.git"
 	},
 	"homepage": "https://github.com/beyondjs/config#readme",
-	"exports": {
-		".": "./index.js"
-	},
+	"modules": "main",
 	"dependencies": {
-		"@beyond-js/equal": "~0.0.1",
+		"@beyond-js/equal": "~1.0.0",
 		"@beyond-js/dynamic-processor": "~0.0.6",
-		"@beyond-js/fs": "^0.0.1",
 		"colors": "^1.4.0",
 		"chokidar": "^3.5.3"
 	}
