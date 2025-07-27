@@ -11,20 +11,20 @@ export default class Config extends Property {
 		return 'object';
 	}
 
-	#properties;
+	#properties: Properties;
 	get properties() {
 		return this.#properties;
 	}
 
-	has(name) {
+	has(name: string) {
 		return this.#properties.has(name);
 	}
 
-	get(name) {
+	get(name: string) {
 		return this.#properties.get(name);
 	}
 
-	constructor(path, branchesSpecs, branch, parent) {
+	constructor(path: string, branchesSpecs?: any, branch?: string, parent?: Property) {
 		super(path, branchesSpecs, branch, parent);
 		this.#properties = new Properties(this);
 	}

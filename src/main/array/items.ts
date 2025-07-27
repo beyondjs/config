@@ -1,13 +1,20 @@
-import equal from '@beyond-js/equal/main';
+import type Property from '../property';
+import { equal } from '@beyond-js/equal/main';
+import { dirname, join } from 'path';
+
+interface IError {
+	code: string;
+	text: string;
+}
 
 export default class extends Map {
-	#property;
+	#property: Property;
 	#destroyed = false;
 	get destroyed() {
 		return this.#destroyed;
 	}
 
-	#errors = [];
+	#errors: IError[] = [];
 	get errors() {
 		return this.#errors;
 	}
@@ -16,7 +23,7 @@ export default class extends Map {
 		return !this.errors.length;
 	}
 
-	constructor(property) {
+	constructor(property: Property) {
 		super();
 		this.#property = property;
 	}
@@ -24,22 +31,21 @@ export default class extends Map {
 	update() {
 		let { value, branch } = this.#property;
 		value = value ? value : [];
-		const errors = [];
+		const errors: IError[] = [];
 		if (value && !(value instanceof Array)) {
-			errors.push(
-				`Items of branch "${this.#property.branch}" cannot be updated. ` +
-					`Its parent value should be an "array", however it is "${typeof value}"`
-			);
+			const error = {
+				code: 'INVALID_TYPE',
+				text: `Items of branch "${this.#property.branch}" must be an "array", however it is "${typeof value}"`
+			};
+			errors.push(error);
 			value = [];
 		}
 
 		const updated = new Map();
 		for (const data of value) {
-			const p = require('path');
-
-			let path = typeof data === 'string' ? p.dirname(data) : data?.path;
+			let path = typeof data === 'string' ? dirname(data) : data?.path;
 			if (!path) continue;
-			path = p.join(this.#property.path, path);
+			path = join(this.#property.path, path);
 
 			const property = this.has(path)
 				? this.get(path)

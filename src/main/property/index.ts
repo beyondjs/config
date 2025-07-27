@@ -1,5 +1,8 @@
-import { DynamicProcessor } from '@beyond-js/dynamic-processor';
-import { equal } from '@beyond-js/equal';
+import type { BranchesSpecType } from './branches-specs';
+import type { IRequire } from '@beyond-js/dynamic-processor/main';
+import { BranchesSpec } from './branches-specs';
+import { DynamicProcessor } from '@beyond-js/dynamic-processor/main';
+import { equal } from '@beyond-js/equal/main';
 import PropertyFile from './file';
 
 // The autoincrement is just to have an id in the config objects that is useful in development to trace the code
@@ -8,7 +11,7 @@ let autoincrement = 0;
 /**
  * Configuration property, abstract class from which classes './array' and './object' inherit
  */
-export default class Property extends DynamicProcessor() {
+export default class Property<T> extends DynamicProcessor() {
 	get dp() {
 		return 'utils.config.property';
 	}
@@ -18,14 +21,14 @@ export default class Property extends DynamicProcessor() {
 		return this.#parent;
 	}
 
-	#branchesSpecs;
+	#branchesSpecs: BranchesSpec;
 	get branchesSpecs() {
 		return this.#branchesSpecs;
 	}
 
 	#id = autoincrement++;
 	get id() {
-		return this.#id;
+		return this.#id.toString();
 	}
 
 	#errors = [];
@@ -97,12 +100,12 @@ export default class Property extends DynamicProcessor() {
 		this._invalidate();
 	}
 
-	#value;
+	#value: T;
 	get value() {
 		return this.#value;
 	}
 
-	#branch;
+	#branch: string;
 	get branch() {
 		return this.#branch;
 	}
@@ -114,23 +117,23 @@ export default class Property extends DynamicProcessor() {
 	 * (only if the property is the root, otherwise it must be undefined).
 	 * Once the initial path is configured in the root property, the child nodes that have their
 	 * configuration in files, calculates its path with respect to its location.
-	 * @param branchesSpecs {object=} The list of properties that can be stored in independents files.
+	 * @param branchesSpecs {BranchesSpecType} The list of properties that can be stored in independents files.
 	 * The key is the branch, and the value can be 'array' or 'object'
 	 * (only if the property is the root, otherwise it should be undefined)
 	 * @param branch {string=} The branch of the current property.
 	 * Ex: '/applications/children/template'
 	 * (if the property is the root, then an empty string ('') can be specified, or undefined)
-	 * @param parent {object=} The parent property.
+	 * @param parent {Property} The parent property.
 	 * (only if the property is a branch, otherwise it should be undefined)
 	 */
-	constructor(rootPath, branchesSpecs, branch, parent) {
+	constructor(rootPath: string, branchesSpecs: BranchesSpecType, branch: string, parent: Property) {
 		branch = branch ? branch : '';
 		if (typeof branch !== 'string') throw new Error('Invalid "branch" parameter');
 		if ((rootPath && parent) || (!rootPath && !parent)) throw new Error('Invalid parameters');
 		super();
 
 		this.#rootPath = rootPath;
-		this.#branchesSpecs = parent ? parent.branchesSpecs : new (require('./branches-specs'))(branchesSpecs);
+		this.#branchesSpecs = parent ? parent.branchesSpecs : new BranchesSpec(branchesSpecs);
 
 		this.#branch = branch;
 		this.#parent = parent;

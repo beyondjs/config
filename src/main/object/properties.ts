@@ -1,11 +1,18 @@
+import Property from '../property';
+
+interface IError {
+	code: string;
+	text: string;
+}
+
 export default class extends Map {
-	#property;
+	#property: Property;
 	#destroyed = false;
 	get destroyed() {
 		return this.#destroyed;
 	}
 
-	#errors = [];
+	#errors: IError[] = [];
 	get errors() {
 		return this.#errors;
 	}

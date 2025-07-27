@@ -1,3 +1,4 @@
+import type { IRequest } from '@beyond-js/dynamic-processor/main';
 import { DynamicProcessor } from '@beyond-js/dynamic-processor/main';
 import fs from 'fs';
 import chokidar from 'chokidar';
@@ -10,24 +11,24 @@ export default class Property extends DynamicProcessor() {
 	#watcher;
 
 	// The path of the parent property, or the specified path when the property is the root
-	#root;
+	#root: string;
 	get root() {
 		return this.#root;
 	}
 
 	// The relative path of the configuration file specified from the data of the property when the data is a string
-	#relative;
+	#relative: string;
 	get relative() {
 		return this.#relative;
 	}
 
 	// The full path of the file (root + relative)
-	#file;
+	#file: string;
 	get file() {
 		return this.#file;
 	}
 
-	#dirname;
+	#dirname: string;
 	get dirname() {
 		if (this.#dirname !== void 0) return this.#dirname;
 		return (this.#dirname = require('path').dirname(this.#file));
@@ -53,7 +54,7 @@ export default class Property extends DynamicProcessor() {
 	 * @param root {string} The path of the parent property, or the specified path when the property is the root
 	 * @param relative {string} The data of the property when the data is a string
 	 */
-	constructor(root, relative) {
+	constructor(root: string, relative: string) {
 		super();
 		this.#root = root;
 		this.#relative = relative;
@@ -66,7 +67,7 @@ export default class Property extends DynamicProcessor() {
 		this.#watcher.on('all', this._invalidate);
 	}
 
-	async _process(request) {
+	async _process(request: IRequest) {
 		this.#value = undefined;
 
 		const done = ({ value, errors }) => {

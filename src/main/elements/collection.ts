@@ -1,4 +1,4 @@
-import DynamicProcessor from '@beyond-js/dynamic-processor/main';
+import { DynamicProcessor } from '@beyond-js/dynamic-processor/main';
 
 export default class CofnigCollection extends DynamicProcessor(Map) {
 	get dp() {

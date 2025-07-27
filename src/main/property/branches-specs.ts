@@ -1,6 +1,10 @@
-export default class extends Map {
-	constructor(branches) {
+export type BranchType = 'object' | 'array';
+export type BranchesSpecType = { [branch: string]: BranchType };
+
+export class BranchesSpec extends Map<string, BranchType> {
+	constructor(branches: BranchesSpecType) {
 		super();
+
 		branches = branches ? branches : {};
 		if (typeof branches !== 'object') throw new Error('Invalid parameters');
 		branches[''] = branches[''] ? branches[''] : 'object';
