@@ -1,6 +1,6 @@
 import type { IRequest } from '@beyond-js/dynamic-processor/main';
 import { DynamicProcessor } from '@beyond-js/dynamic-processor/main';
-import fs from 'fs';
+import * as fs from 'fs';
 import chokidar from 'chokidar';
 
 export default class Property extends DynamicProcessor() {

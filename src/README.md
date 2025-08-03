@@ -1,79 +1,110 @@
 # @beyond-js/config
 
-A dynamic configuration processor for managing complex configuration objects and collections.
+The `@beyond-js/config` package allows for a modular and dynamic approach to managing project configurations. One of its
+key features is its ability to handle properties in two ways: as an inline data object or as a reference to an external
+file. From `@beyond-js/config`'s perspective, each branch of the configuration is an independent, dynamic property. The
+package's internal logic is responsible for resolving the value of each property, whether it comes from an inline object
+or an external file. This process is dynamic and hot-reloading, reacting to changes via the `change` event.
 
-## Installation
+---
 
-```bash
-npm install @beyond-js/config
+# Configuration Flexibility
+
+The package offers two primary methods for structuring your configuration, which can be freely combined.
+
+## 1. Inline Configuration
+
+For smaller projects or simple configuration branches, you can define all properties directly within a single
+`config.json` file. Here, the `project` property is an object containing all its information inline.
+
+**`config.json`**
+
+```json
+{
+	"project": {
+		"name": "My Awesome Project",
+		"version": "1.0.0",
+		"author": "BeyondJS"
+	},
+	"modules": [
+		{
+			"name": "core",
+			"version": "1.0.0"
+		},
+		"modules/ui.json"
+	]
+}
 ```
 
-## Features
+In this example, the package resolves the `project` property from the inline object, while it resolves the
+`modules/ui.json` property by reading and parsing the external file.
 
--   Dynamic processing of configuration objects and arrays
--   File-based configuration support
--   Hierarchical configuration structure
--   Error and warning handling
--   Watching for file changes
+---
 
-## Usage
+## 2. Modular Configuration with References
 
-```javascript
-const { Config, ConfigCollection } = require('@beyond-js/config');
+When a configuration grows, you can modularize it by moving branches to external files. For instance, the `project`
+property can be moved to a separate file, and the main `config.json` file would simply reference it as a string.
 
-// Create a configuration object
-const config = new Config('/path/to/config/root', {
-	applications: 'array',
-	'applications/children': 'object'
+**`config.json`**
+
+```json
+{
+	"project": "project/details.json",
+	"modules": [
+		{
+			"name": "core",
+			"version": "1.0.0"
+		},
+		"modules/ui.json"
+	]
+}
+```
+
+**`project/details.json`**
+
+```json
+{
+	"name": "My Awesome Project",
+	"version": "1.0.0",
+	"author": "BeyondJS"
+}
+```
+
+The package transparently handles both scenarios for the developer. When a property's value is a string, it's treated as
+a path to an external configuration file, which is then read, parsed, and used as the final value for that property.
+
+---
+
+# Developer Usage
+
+A developer interacts with the configuration properties via the `Config` instance. Because the processing is
+asynchronous, the underlying `@beyond-js/dynamic-processor` library guarantees that properties are ready before being
+accessed and that the application can react to any changes.
+
+```typescript
+const { Config } = require('@beyond-js/config');
+const path = require('path');
+
+const config = new Config(path.join(__dirname, 'config-project'), {
+	'/project': 'object',
+	'/modules': 'array',
+	'/modules/children': 'object'
 });
 
-// Set configuration data
 config.data = 'config.json';
 
-// Access configuration properties
-config.ready.then(() => {
-	console.log(config.value);
-	console.log(config.errors);
-	console.log(config.warnings);
-});
+// Wait for the project property to be ready before accessing its value
+const project = config.get('project');
+await project.ready;
+console.log(project.value.name); // 'My Awesome Project'
 
-// Create a configuration collection
-class MyCollection extends ConfigCollection {
-	_createItem(config) {
-		return new MyItem(config);
-	}
-}
-
-const collection = new MyCollection(config);
-
-// Process the collection
-collection.ready.then(() => {
-	console.log(collection.size);
-	for (const [key, item] of collection) {
-		console.log(key, item);
-	}
+// Listen for changes on the project property
+project.on('change', () => {
+	console.log('Project configuration has changed!');
+	console.log('New project name:', project.value.name);
 });
 ```
 
-## API
-
-### Config
-
--   `constructor(rootPath, branchesSpecs)`
--   `data`: Get/set the configuration data
--   `value`: Get the processed configuration value
--   `errors`: Get configuration errors
--   `warnings`: Get configuration warnings
--   `valid`: Check if the configuration is valid
-
-### ConfigCollection
-
--   `constructor(config)`
--   `config`: Get the underlying configuration object
--   `errors`: Get collection errors
--   `warnings`: Get collection warnings
--   `valid`: Check if the collection is valid
-
-## License
-
-MIT © [[BeyondJS](https://beyondjs.com)]
+This approach eliminates the need for manual file loading and parsing, while the built-in reactivity ensures that any
+changes to the configuration files are automatically detected and processed.

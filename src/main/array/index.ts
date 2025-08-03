@@ -19,7 +19,7 @@ export default class extends Property {
 		return this.#items;
 	}
 
-	constructor(path, branchesSpecs, branch, parent) {
+	constructor(path: string, branchesSpecs, branch, parent) {
 		super(path, branchesSpecs, branch, parent);
 		this.#items = new Items(this);
 	}

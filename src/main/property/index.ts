@@ -1,37 +1,48 @@
 import type { BranchesSpecType } from './branches-specs';
-import type { IRequire } from '@beyond-js/dynamic-processor/main';
 import { BranchesSpec } from './branches-specs';
 import { DynamicProcessor } from '@beyond-js/dynamic-processor/main';
 import { equal } from '@beyond-js/equal/main';
 import PropertyFile from './file';
 
+interface IErrorType {
+	code: string;
+	message: string;
+}
+
+type PropertyDataType = string | object | (string | object)[];
+
 // The autoincrement is just to have an id in the config objects that is useful in development to trace the code
 let autoincrement = 0;
 
 /**
- * Configuration property, abstract class from which classes './array' and './object' inherit
+ * The abstract `Property` class serves as the base for handling configuration data.
+ * It extends `DynamicProcessor` to enable automatic updates when its data or dependencies change.
+ * This class handles file-based configurations, hierarchical structures, and error management.
  */
-export default class Property<T> extends DynamicProcessor() {
+export default class Property extends DynamicProcessor() {
 	get dp() {
 		return 'utils.config.property';
 	}
 
-	#parent;
-	get parent() {
-		return this.#parent;
-	}
-
-	#branchesSpecs: BranchesSpec;
-	get branchesSpecs() {
-		return this.#branchesSpecs;
-	}
-
+	// Unique ID for the property instance.
 	#id = autoincrement++;
 	get id() {
 		return this.#id.toString();
 	}
 
-	#errors = [];
+	// Reference to the parent property in the configuration hierarchy.
+	#parent: Property;
+	get parent() {
+		return this.#parent;
+	}
+
+	// A map defining the expected types ('array' or 'object') for configuration branches.
+	#branches: BranchesSpec;
+	get branches() {
+		return this.#branches;
+	}
+
+	#errors: IErrorType[] = [];
 	get errors() {
 		return this.#errors;
 	}
@@ -40,18 +51,20 @@ export default class Property<T> extends DynamicProcessor() {
 		return !this.errors.length;
 	}
 
-	#warnings = [];
+	#warnings: IErrorType[] = [];
 	get warnings() {
 		return this.#warnings;
 	}
 
-	// Only defined when it is not a branch property
-	#rootPath;
+	// The root path for the configuration, only defined for the top-level property.
+	#rootPath: string;
 	get rootPath() {
 		return this.#rootPath;
 	}
 
-	#path;
+	// The full path of the property. For a root property, it's the root path.
+	// For child properties, it's derived from the parent's path and the property's data.
+	#path: string;
 	get path() {
 		return this.#path;
 	}
@@ -62,21 +75,34 @@ export default class Property<T> extends DynamicProcessor() {
 		return this.#type;
 	}
 
-	#file;
+	// The relative path of the configuration branch (e.g., '/applications/children').
+	#branch: string;
+	get branch() {
+		return this.#branch;
+	}
 
-	// The original configured data
-	// (can be the string that points to the configuration file, an object, or an array of configurations)
-	#data;
+	// An instance of `PropertyFile` used to manage the configuration file if the data is a string.
+	#file: PropertyFile;
+
+	// The processed value of the configuration.
+	#value: any;
+	get value() {
+		return this.#value;
+	}
+
+	// The raw data provided to the property. It can be a string (file path), an object, or undefined.
+	#data: PropertyDataType;
 	get data() {
 		return this.#data;
 	}
 
-	set data(value) {
+	set data(value: PropertyDataType) {
+		// Validation for root property: data must be a string pointing to a file.
 		if (typeof value !== 'string' && !this.#parent) {
-			// It is the root property, it is required the name of the file to be processed
 			throw new Error('Data must be the file to be processed when refers to a root configuration object');
 		}
 
+		// Determine the property's path.
 		this.#path = (() => {
 			if (!['object', 'string'].includes(typeof value)) return;
 
@@ -92,22 +118,15 @@ export default class Property<T> extends DynamicProcessor() {
 			}
 		})();
 
+		// If the data has not changed, do nothing.
 		// Once the path is set, and removed from the value, then we can compare with the previous value
 		// to check if the configuration has changed
 		if (equal(value, this.#data)) return;
 
 		this.#data = value;
+
+		// Invalidate the processor to trigger a re-processing cycle.
 		this._invalidate();
-	}
-
-	#value: T;
-	get value() {
-		return this.#value;
-	}
-
-	#branch: string;
-	get branch() {
-		return this.#branch;
 	}
 
 	/**
@@ -117,7 +136,7 @@ export default class Property<T> extends DynamicProcessor() {
 	 * (only if the property is the root, otherwise it must be undefined).
 	 * Once the initial path is configured in the root property, the child nodes that have their
 	 * configuration in files, calculates its path with respect to its location.
-	 * @param branchesSpecs {BranchesSpecType} The list of properties that can be stored in independents files.
+	 * @param branches {BranchesSpecType} The list of properties that can be stored in independents files.
 	 * The key is the branch, and the value can be 'array' or 'object'
 	 * (only if the property is the root, otherwise it should be undefined)
 	 * @param branch {string=} The branch of the current property.
@@ -126,28 +145,36 @@ export default class Property<T> extends DynamicProcessor() {
 	 * @param parent {Property} The parent property.
 	 * (only if the property is a branch, otherwise it should be undefined)
 	 */
-	constructor(rootPath: string, branchesSpecs: BranchesSpecType, branch: string, parent: Property) {
+	constructor(rootPath: string, branches: BranchesSpecType, branch: string, parent: Property) {
 		branch = branch ? branch : '';
 		if (typeof branch !== 'string') throw new Error('Invalid "branch" parameter');
 		if ((rootPath && parent) || (!rootPath && !parent)) throw new Error('Invalid parameters');
 		super();
 
 		this.#rootPath = rootPath;
-		this.#branchesSpecs = parent ? parent.branchesSpecs : new BranchesSpec(branchesSpecs);
+		this.#branches = parent ? parent.branches : new BranchesSpec(branches);
 
 		this.#branch = branch;
 		this.#parent = parent;
 
-		if (!this.#branchesSpecs.has(branch)) throw new Error(`Branch "${branch}" not found`);
-		this.#type = this.#branchesSpecs.get(branch);
+		if (!this.#branches.has(branch)) throw new Error(`Branch "${branch}" not found`);
+		this.#type = this.#branches.get(branch);
 	}
 
+	/**
+	 * The `_begin` method is part of the `DynamicProcessor` lifecycle.
+	 * It ensures the parent property is ready before processing the current one.
+	 */
 	async _begin() {
 		await this.#parent?.ready;
 	}
 
+	/**
+	 * The `_prepared` method is called after dependencies are ready.
+	 * It manages the `PropertyFile` instance, creating or destroying it as needed based on the data type.
+	 */
 	_prepared() {
-		// Unregister file child if it has changed
+		// Unregister the old file child if its path has changed.
 		(() => {
 			if (!this.#file) return;
 
@@ -160,7 +187,7 @@ export default class Property<T> extends DynamicProcessor() {
 			file.destroy();
 		})();
 
-		// Register file child if it is not previously registered
+		// Register a new file child if the data is a string (a file path) and no file is registered yet.
 		(() => {
 			if (this.#file || typeof this.#data !== 'string') return;
 
@@ -170,7 +197,12 @@ export default class Property<T> extends DynamicProcessor() {
 		})();
 	}
 
-	_process() {
+	/**
+	 * The `_process` method is the core logic for processing the configuration data.
+	 * It handles different data types (object, string) and updates the property's value and errors.
+	 * @returns A boolean indicating if the processed value has changed.
+	 */
+	_process(): boolean {
 		const done = ({ value, errors }) => {
 			errors = errors ? errors : [];
 			const changed = !equal({ value: this.#value, errors: this.#errors }, { value, errors });

@@ -13,10 +13,10 @@
 	"homepage": "https://github.com/beyondjs/config#readme",
 	"modules": "main",
 	"dependencies": {
+		"@beyond-js/dynamic-processor": "~1.0.1",
+		"@beyond-js/watchers": "~1.0.0",
 		"@beyond-js/equal": "~1.0.0",
-		"@beyond-js/dynamic-processor": "~1.0.0",
-		"colors": "^1.4.0",
-		"chokidar": "^3.5.3"
+		"colors": "^1.4.0"
 	},
 	"devDependencies": {
 		"@types/node": "~20.11.0"
