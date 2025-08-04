@@ -99,7 +99,11 @@ export default class Property extends DynamicProcessor() {
 	 * the value must be a string representing the file path to be processed.
 	 *
 	 * - Path Resolution: It determines the full path of the property based on the `value` and
-	 * the parent's path or the `rootPath`. It also removes the `path` property from the value if it's an object.
+	 * the parent's path or the `rootPath`.
+	 * If the value is an object, the method looks for a path property within it. If found, this path
+	 * is used to create a new root for resolving file references for all nested branches.
+	 * Example: if the data is `{"path": "./modules"}` for a property at the project root,
+	 * and a nested branch is `"users/module.json"`, the system will resolve the file to `./modules/users/module.json`.
 	 *
 	 * - Change Detection: It compares the new value with the current data to prevent unnecessary processing.
 	 * If the data has not changed, it returns early.
@@ -118,14 +122,19 @@ export default class Property extends DynamicProcessor() {
 		}
 
 		// Determine the property's path.
+		// If the data is an object, it checks for a 'path' property to resolve the path relative
+		// to the parent or root path. The 'path' property is then deleted from the object to prevent it
+		// from being part of the value. If the data is a string (a file path), it calculates the directory
+		// of that file to be used as the property's path.
 		this.#path = (() => {
 			if (!['object', 'string'].includes(typeof data)) return;
 
 			const root = this.#parent ? this.#parent.path : this.#rootPath;
 
 			if (typeof data === 'object') {
-				const path = data.path ? join(root, data.path) : root;
-				delete data.path;
+				const d = <{ path?: string }>data;
+				const path = d.path ? join(root, d.path) : root;
+				delete (data as any).path;
 				return path;
 			} else if (typeof data === 'string') {
 				return dirname(join(root, data));
@@ -215,7 +224,7 @@ export default class Property extends DynamicProcessor() {
 	 * @returns A boolean indicating if the processed value has changed.
 	 */
 	_process(): boolean {
-		const done = ({ value, errors }) => {
+		const done = ({ value, errors }: { value?: PropertyValueType; errors?: IErrorType[] }) => {
 			errors = errors ? errors : [];
 			const changed = !equal({ value: this.#value, errors: this.#errors }, { value, errors });
 			this.#value = value;
@@ -224,16 +233,17 @@ export default class Property extends DynamicProcessor() {
 		};
 
 		if (['object', 'undefined'].includes(typeof this.#data)) {
-			return done({ value: this.#data });
+			return done({ value: <PropertyValueType>this.#data });
 		} else if (typeof this.#data === 'string') {
 			const file = this.#file;
 			const { errors, value } = file;
 			return done({ errors, value });
 		} else {
-			const error =
+			const code = 'INVALID_TYPE';
+			const message =
 				`Configuration value is invalid, value type must be an object, ` +
 				`a string or undefined, but it is "${typeof this.#data}"`;
-			return done({ errors: [error] });
+			return done({ errors: [{ code, message }] });
 		}
 	}
 

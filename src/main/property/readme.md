@@ -1,6 +1,6 @@
 # Property
 
-# Overview
+## Overview
 
 The `Property` class is the abstract base of the `@beyond-js/config` package. It extends `DynamicProcessor` to provide a
 dynamic and reactive way to manage configuration data. Its main purpose is to encapsulate the logic for resolving the
@@ -9,21 +9,22 @@ structure.
 
 ---
 
-# Key Concepts
+## Key Concepts
 
-## `#data` vs. `#value`
+### `#data` vs. `#value`
 
 The distinction between `#data` and `#value` is fundamental to understanding the `Property` class.
 
--   `#data`: Stores the **raw data input** of the property. It can be an object, a string representing a file path, or
-    `undefined`.
--   `#value`: Stores the **processed value** of the property. If `#data` is a string, `Property` uses the `PropertyFile`
-    class to read and parse the file, and the parsed content becomes `#value`. If `#data` is already an object, `#value`
-    is simply that object.
+-   `#data`: This stores the **raw data input** of the property, corresponding to the `PropertyDataType`. It can be an
+    object, a string representing a file path, or `undefined`.
+-   `#value`: This stores the **processed value** of the property, corresponding to the `PropertyValueType`. If `#data`
+    is a string, the `Property` class transparently uses the `PropertyFile` processor to read and parse the file, and
+    the parsed content becomes `#value`. If `#data` is already an object, `#value` is simply that object. This ensures
+    that `#value` is always the final, usable configuration, never a raw file path string.
 
 This approach allows the class to transparently handle both inline and modular, file-based configurations.
 
-## Dynamic Processing
+### Dynamic Processing
 
 `Property` is a `DynamicProcessor`, which means its value is resolved asynchronously. It reacts to changes in its
 dependencies (e.g., if the configuration file changes) and automatically updates its value, eliminating the need for
@@ -31,7 +32,7 @@ manual reloading.
 
 ---
 
-# Class Properties
+## Class Properties
 
 -   `#parent`: A reference to the parent property in the configuration hierarchy.
 -   `#branches`: A map that defines the expected types (`'array'` or `'object'`) for the configuration branches, managed
@@ -44,7 +45,7 @@ manual reloading.
 
 ---
 
-# Key Methods
+## Key Methods
 
 -   **`constructor(rootPath, branches, branch, parent)`**: Creates a new `Property` instance and sets up its
     parent-child relationship, configuration branch, and specifications.
@@ -58,7 +59,7 @@ manual reloading.
 
 ---
 
-# Subclasses
+## Subclasses
 
 `Property` serves as the base class for handling different types of configuration data. It is extended to create more
 specialized classes:

@@ -108,3 +108,86 @@ project.on('change', () => {
 
 This approach eliminates the need for manual file loading and parsing, while the built-in reactivity ensures that any
 changes to the configuration files are automatically detected and processed.
+
+---
+
+# Configuration Modularity: Branches and Paths
+
+The `@beyond-js/config` package allows for configuration to be modularized by moving branches to external files for
+better organization. It is important to note that a branch can be specified in an independent folder. This allows for
+advanced flexibility in structuring complex configurations, as the system is capable of resolving file paths coherently
+even in nested branches.
+
+Consider an example where the main configuration defines a list of modules, and each module has its own configuration
+files in a separate folder.
+
+**File structure:**
+
+```
+.
+├── config.json
+└── modules/
+    ├── invoices/
+    │   ├── module.json
+    │   ├── settings.json
+    │   └── ...module files
+    └── users/
+        ├── module.json
+        ├── settings.json
+        └── ...module files
+```
+
+**`config.json`**
+
+```json
+{
+	"modules": ["modules/users/module.json", "modules/invoices/module.json"]
+}
+```
+
+**`modules/users/module.json`**
+
+```json
+{
+	"name": "users",
+	"version": "1.0.0",
+	"settings": "settings.json"
+}
+```
+
+**`modules/users/settings.json`**
+
+```json
+{
+	"permissions": ["read", "write"]
+}
+```
+
+In this case, when `config.json` is processed, the `modules` property is read as an array. Each array element points to
+an external file. For the `"modules/users/module.json"` element, the package reads the file and its content becomes the
+value of the property. Inside this object, the `settings` property is in turn a reference to an external file. Since the
+path context is now `modules/users/`, the `settings.json` file is resolved to `modules/users/settings.json`. This way,
+each module can have its own configuration file structure without path conflicts.
+
+---
+
+## Modularity with the `path` Property
+
+The `@beyond-js/config` package also considers the `path` property within a configuration object to redefine the path
+root for that branch. This allows for greater flexibility in structuring the configuration, as nested paths can be
+relative to the location of a configuration file rather than the project root.
+
+For example, `config.json` could use the `path` property to set a new root:
+
+**`config.json`**
+
+```json
+{
+	"path": "modules",
+	"modules": ["users/module.json", "invoices/module.json"]
+}
+```
+
+In this case, the system first sets the new configuration root to the `modules` folder. From there, the references to
+the modules (`"users/module.json"` and `"invoices/module.json"`) are resolved relative to `modules`, rather than the
+project root. This simplifies the main configuration and improves project organization.
