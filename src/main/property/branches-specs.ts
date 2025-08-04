@@ -1,5 +1,4 @@
-export type BranchType = 'object' | 'array';
-export type BranchesSpecType = { [branch: string]: BranchType };
+import type { BranchType, BranchesSpecType } from '../types';
 
 export class BranchesSpec extends Map<string, BranchType> {
 	constructor(branches: BranchesSpecType) {

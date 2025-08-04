@@ -1,8 +1,9 @@
+import type { BranchesSpecType } from '../types';
 import { equal } from '@beyond-js/equal/main';
 import Property from '../property';
 import Properties from './properties';
 
-export default class Config extends Property {
+export default class ObjectProperty extends Property {
 	get dp() {
 		return 'utils.config.property.object';
 	}
@@ -16,39 +17,49 @@ export default class Config extends Property {
 		return this.#properties;
 	}
 
-	has(name: string) {
+	has(name: string): boolean {
 		return this.#properties.has(name);
 	}
 
-	get(name: string) {
+	get(name: string): Property | undefined {
 		return this.#properties.get(name);
 	}
 
-	constructor(path: string, branchesSpecs?: any, branch?: string, parent?: Property) {
-		super(path, branchesSpecs, branch, parent);
+	constructor(path: string, branches?: BranchesSpecType, branch?: string, parent?: Property) {
+		super(path, branches, branch, parent);
 		this.#properties = new Properties(this);
 	}
 
 	/**
-	 * Check if the value of the current property has changed.
-	 * To find it out, it is required to remove the children from the received data,
-	 * since the children properties verify their own data.
+	 * Processes the configuration data for the current property.
+	 *
+	 * This method extends the base `Property._process()` logic to handle nested object properties.
+	 * It first calls the parent method to process the core value and then performs a specific
+	 * comparison to detect changes, excluding nested child properties.
+	 *
+	 * @returns {boolean} A boolean indicating if the property's value has changed.
 	 */
-	_process() {
-		let previous = this.value;
+	_process(): boolean {
+		let previous: Record<string, any> = this.value;
 		if (super._process() === false) return false;
 
-		previous = Object.assign({}, previous);
-		const actual = Object.assign({}, this.value);
+		// Check for changes in the current object's properties, excluding nested branches.
+		// Nested branches are managed independently by their own `Property` instances.
+		const changed = (() => {
+			previous = Object.assign({}, previous);
+			const actual: Record<string, any> = Object.assign({}, this.value);
 
-		[...this.branchesSpecs.keys()].forEach(branch => {
-			if (!branch.startsWith(`${this.branch}/`)) return;
-			const child = branch.substr(this.branch.length + 1).split('/')[0];
-			delete previous[child];
-			delete actual[child];
-		});
+			// Remove child branches from the comparison, as they have their own processors.
+			[...this.branches.keys()].forEach(branch => {
+				if (!branch.startsWith(`${this.branch}/`)) return;
+				const child = branch.slice(this.branch.length + 1).split('/')[0];
+				delete previous[child];
+				delete actual[child];
+			});
 
-		const changed = !equal(actual, previous);
+			return !equal(actual, previous);
+		})();
+
 		this.#properties.update();
 		return changed;
 	}

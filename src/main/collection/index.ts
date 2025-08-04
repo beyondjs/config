@@ -1,60 +1,69 @@
+import type ArrayProperty from '../array';
+import type Property from '../property';
+import type { PropertyObjectType } from '../types';
 import { DynamicProcessor } from '@beyond-js/dynamic-processor/main';
 
-export default class CofnigCollection extends DynamicProcessor(Map) {
+export /*bundle*/ type CollectionItemsType = Map<string, Property>;
+
+export default class ConfigCollection<T> extends DynamicProcessor(Map) {
 	get dp() {
-		return 'utils.config.collection';
+		return '@beyond-js/config/collection';
 	}
 
-	get config() {
-		return this.children.get('config').child;
+	#property: ArrayProperty;
+	get property() {
+		return this.#property;
 	}
 
 	get errors() {
-		return this.config.errors;
+		return this.#property.errors;
 	}
 
 	get warnings() {
-		return this.config.warnings;
+		return this.#property.warnings;
 	}
 
 	get valid() {
-		return this.config.valid;
+		return this.#property.valid;
 	}
 
-	constructor(config) {
+	constructor(property: ArrayProperty) {
 		super();
-		super.setup(new Map([['config', { child: config }]]));
+
+		this.#property = property;
+		super.setup(new Map([['property', { child: property }]]));
 	}
 
 	// This method should be overridden to process the configuration, and also can be used
 	// to alter the configuration of the items (modify, add or remove) before creating the instances
-	_processConfig(items) {
+	_processConfig(items: CollectionItemsType): CollectionItemsType {
 		return items;
 	}
 
 	// This method should be overridden
-	_createItem(config) {
+	_createItem(config: PropertyObjectType) {
 		void config;
 		throw new Error('This method should be overridden');
 	}
 
-	_deleteItem(item) {
-		item.destroy();
+	_deleteItem(item: T) {
+		if (!(item instanceof DynamicProcessor)) return;
+		(item as any).destroy?.();
 	}
 
 	_process() {
-		const { config } = this;
-		if (!config.valid) {
+		const property = this.#property;
+		if (!property.valid) {
 			this.clear();
 			return;
 		}
 
-		let items = this._processConfig(new Map(config.items));
+		let items: CollectionItemsType = this._processConfig(new Map(property.items));
 		items = items ? items : new Map();
 
 		const updated = new Map();
-		for (const [path, config] of items) {
-			const item = this.has(path) ? this.get(path) : this._createItem(config);
+		for (const [path, property] of items) {
+			const item = this.has(path) ? this.get(path) : this._createItem(property);
 			if (item.path !== path) throw new Error(`Item must specify its path`);
 			updated.set(path, item);
 		}

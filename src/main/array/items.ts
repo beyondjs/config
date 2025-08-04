@@ -1,20 +1,17 @@
 import type Property from '../property';
+import type { IErrorType, PropertyArrayType } from '../types';
 import { equal } from '@beyond-js/equal/main';
 import { dirname, join } from 'path';
 
-interface IError {
-	code: string;
-	text: string;
-}
-
-export default class extends Map {
+export default class ArrayPropertyItems extends Map<string, Property> {
 	#property: Property;
+
 	#destroyed = false;
 	get destroyed() {
 		return this.#destroyed;
 	}
 
-	#errors: IError[] = [];
+	#errors: IErrorType[] = [];
 	get errors() {
 		return this.#errors;
 	}
@@ -29,13 +26,16 @@ export default class extends Map {
 	}
 
 	update() {
-		let { value, branch } = this.#property;
+		let value = <PropertyArrayType>this.#property.value;
+		const { branch } = this.#property;
+
 		value = value ? value : [];
-		const errors: IError[] = [];
+		const errors: IErrorType[] = [];
 		if (value && !(value instanceof Array)) {
+			const { branch } = this.#property;
 			const error = {
 				code: 'INVALID_TYPE',
-				text: `Items of branch "${this.#property.branch}" must be an "array", however it is "${typeof value}"`
+				message: `Items of branch "${branch}" must be an "array", however it is "${typeof value}"`
 			};
 			errors.push(error);
 			value = [];

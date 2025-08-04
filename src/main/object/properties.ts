@@ -1,4 +1,5 @@
-import Property from '../property';
+import type { BranchesSpec } from '../property/branches-specs';
+import ObjectProperty from '../object';
 
 interface IError {
 	code: string;
@@ -6,7 +7,7 @@ interface IError {
 }
 
 export default class extends Map {
-	#property: Property;
+	#property: ObjectProperty;
 	#destroyed = false;
 	get destroyed() {
 		return this.#destroyed;
@@ -21,8 +22,8 @@ export default class extends Map {
 		return !this.errors.length;
 	}
 
-	#initialise = branchesSpecs =>
-		branchesSpecs.forEach((type, branch) => {
+	#initialise(branches: BranchesSpec) {
+		branches.forEach((type, branch) => {
 			if (!branch.startsWith(`${this.#property.branch}/`)) return;
 			const split = branch.substr(this.#property.branch.length + 1).split('/');
 			if (split.length !== 1) return;
@@ -32,11 +33,12 @@ export default class extends Map {
 			const property = new (require(`../${type}`))(undefined, undefined, branch, this.#property);
 			this.set(child, property);
 		});
+	}
 
-	constructor(property) {
+	constructor(property: ObjectProperty) {
 		super();
 		this.#property = property;
-		this.#initialise(this.#property.branchesSpecs);
+		this.#initialise(this.#property.branches);
 	}
 
 	update() {

@@ -1,15 +1,9 @@
-import type { BranchesSpecType } from './branches-specs';
+import type { BranchType, BranchesSpecType, IErrorType, PropertyDataType, PropertyValueType } from '../types';
 import { BranchesSpec } from './branches-specs';
 import { DynamicProcessor } from '@beyond-js/dynamic-processor/main';
 import { equal } from '@beyond-js/equal/main';
-import PropertyFile from './file';
-
-interface IErrorType {
-	code: string;
-	message: string;
-}
-
-type PropertyDataType = string | object | (string | object)[];
+import FileProperty from './file';
+import { join, dirname } from 'path';
 
 // The autoincrement is just to have an id in the config objects that is useful in development to trace the code
 let autoincrement = 0;
@@ -70,7 +64,7 @@ export default class Property extends DynamicProcessor() {
 	}
 
 	// Can be 'array' or 'object'
-	#type;
+	#type: BranchType;
 	get type() {
 		return this.#type;
 	}
@@ -81,14 +75,8 @@ export default class Property extends DynamicProcessor() {
 		return this.#branch;
 	}
 
-	// An instance of `PropertyFile` used to manage the configuration file if the data is a string.
-	#file: PropertyFile;
-
-	// The processed value of the configuration.
-	#value: any;
-	get value() {
-		return this.#value;
-	}
+	// An instance of `FileProperty` used to manage the configuration file if the data is a string.
+	#file: FileProperty;
 
 	// The raw data provided to the property. It can be a string (file path), an object, or undefined.
 	#data: PropertyDataType;
@@ -96,54 +84,78 @@ export default class Property extends DynamicProcessor() {
 		return this.#data;
 	}
 
-	set data(value: PropertyDataType) {
+	// The processed value of the configuration.
+	#value: PropertyValueType;
+	get value() {
+		return this.#value;
+	}
+
+	/**
+	 * Sets the raw configuration data for the property.
+	 *
+	 * This setter is the entry point for new configuration data. It handles the following logic:
+	 *
+	 * - Validation: For a root property (one without a parent),
+	 * the value must be a string representing the file path to be processed.
+	 *
+	 * - Path Resolution: It determines the full path of the property based on the `value` and
+	 * the parent's path or the `rootPath`. It also removes the `path` property from the value if it's an object.
+	 *
+	 * - Change Detection: It compares the new value with the current data to prevent unnecessary processing.
+	 * If the data has not changed, it returns early.
+	 *
+	 * - Invalidation: If the data has changed, it updates the internal `#data` and calls `_invalidate()`
+	 * to trigger a new asynchronous processing cycle via the `DynamicProcessor`.
+	 *
+	 * @param {PropertyDataType} value The new configuration data. This can be a string (file path),
+	 * an object containing configuration, or an array of strings/objects.
+	 * @throws {Error} Throws an error if the root property is assigned a value that is not a string.
+	 */
+	set data(data: PropertyDataType) {
 		// Validation for root property: data must be a string pointing to a file.
-		if (typeof value !== 'string' && !this.#parent) {
+		if (typeof data !== 'string' && !this.#parent) {
 			throw new Error('Data must be the file to be processed when refers to a root configuration object');
 		}
 
 		// Determine the property's path.
 		this.#path = (() => {
-			if (!['object', 'string'].includes(typeof value)) return;
+			if (!['object', 'string'].includes(typeof data)) return;
 
-			const { join, dirname } = require('path');
 			const root = this.#parent ? this.#parent.path : this.#rootPath;
 
-			if (typeof value === 'object') {
-				const path = value.path ? join(root, value.path) : root;
-				delete value.path;
+			if (typeof data === 'object') {
+				const path = data.path ? join(root, data.path) : root;
+				delete data.path;
 				return path;
-			} else if (typeof value === 'string') {
-				return dirname(join(root, value));
+			} else if (typeof data === 'string') {
+				return dirname(join(root, data));
 			}
 		})();
 
 		// If the data has not changed, do nothing.
-		// Once the path is set, and removed from the value, then we can compare with the previous value
+		// Once the path is set, and removed from the data, then we can compare with the previous data
 		// to check if the configuration has changed
-		if (equal(value, this.#data)) return;
+		if (equal(data, this.#data)) return;
 
-		this.#data = value;
+		this.#data = data;
 
 		// Invalidate the processor to trigger a re-processing cycle.
 		this._invalidate();
 	}
 
 	/**
-	 * Configuration property constructor
+	 * Configuration property constructor.
 	 *
-	 * @param rootPath {string=} The path where the configuration file is located.
-	 * (only if the property is the root, otherwise it must be undefined).
-	 * Once the initial path is configured in the root property, the child nodes that have their
-	 * configuration in files, calculates its path with respect to its location.
-	 * @param branches {BranchesSpecType} The list of properties that can be stored in independents files.
-	 * The key is the branch, and the value can be 'array' or 'object'
-	 * (only if the property is the root, otherwise it should be undefined)
-	 * @param branch {string=} The branch of the current property.
-	 * Ex: '/applications/children/template'
-	 * (if the property is the root, then an empty string ('') can be specified, or undefined)
-	 * @param parent {Property} The parent property.
-	 * (only if the property is a branch, otherwise it should be undefined)
+	 * @param {string} [rootPath] The root path for the configuration file. This is only
+	 * specified for the root property; child properties should be `undefined`.
+	 * @param {BranchesSpecType} [branches] A map defining the expected types ('array' or 'object') for
+	 * configuration branches. This is only specified for the root property.
+	 * @param {string} [branch] The branch path of the current property (e.g., '/applications/children/template').
+	 * An empty string ('') or `undefined` can be used for the root property.
+	 * @param {Property} [parent] The parent property instance. This is only specified for child
+	 * properties; the root property should be `undefined`.
+	 * @throws {Error} Throws an error if `rootPath` and `parent` are both defined or both undefined.
+	 * @throws {Error} Throws an error if the specified `branch` is not found in the `branches` specification.
 	 */
 	constructor(rootPath: string, branches: BranchesSpecType, branch: string, parent: Property) {
 		branch = branch ? branch : '';
@@ -171,7 +183,7 @@ export default class Property extends DynamicProcessor() {
 
 	/**
 	 * The `_prepared` method is called after dependencies are ready.
-	 * It manages the `PropertyFile` instance, creating or destroying it as needed based on the data type.
+	 * It manages the `FileProperty` instance, creating or destroying it as needed based on the data type.
 	 */
 	_prepared() {
 		// Unregister the old file child if its path has changed.
@@ -192,7 +204,7 @@ export default class Property extends DynamicProcessor() {
 			if (this.#file || typeof this.#data !== 'string') return;
 
 			const root = this.#parent ? this.#parent.path : this.#rootPath;
-			const file = (this.#file = new PropertyFile(root, this.#data));
+			const file = (this.#file = new FileProperty(root, this.#data));
 			this.children.register(new Map([['file', { child: file }]]));
 		})();
 	}

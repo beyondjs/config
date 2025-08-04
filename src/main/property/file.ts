@@ -1,9 +1,10 @@
 import type { IRequest } from '@beyond-js/dynamic-processor/main';
 import { DynamicProcessor } from '@beyond-js/dynamic-processor/main';
 import * as fs from 'fs';
-import chokidar from 'chokidar';
+import * as chokidar from 'chokidar';
+import { dirname, join } from 'path';
 
-export default class Property extends DynamicProcessor() {
+export default class FileProperty extends DynamicProcessor() {
 	get dp() {
 		return 'utils.config.property.file';
 	}
@@ -31,7 +32,7 @@ export default class Property extends DynamicProcessor() {
 	#dirname: string;
 	get dirname() {
 		if (this.#dirname !== void 0) return this.#dirname;
-		return (this.#dirname = require('path').dirname(this.#file));
+		return (this.#dirname = dirname(this.#file));
 	}
 
 	#errors = [];
@@ -58,7 +59,7 @@ export default class Property extends DynamicProcessor() {
 		super();
 		this.#root = root;
 		this.#relative = relative;
-		this.#file = require('path').join(root, relative);
+		this.#file = join(root, relative);
 	}
 
 	async _begin() {

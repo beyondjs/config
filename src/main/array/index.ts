@@ -1,7 +1,8 @@
+import type { IErrorType, BranchesSpecType } from '../types';
 import Property from '../property';
-import Items from './items';
+import ArrayPropertyItems from './items';
 
-export default class extends Property {
+export default class ArrayProperty extends Property {
 	get dp() {
 		return 'utils.config.property.array';
 	}
@@ -10,18 +11,18 @@ export default class extends Property {
 		return 'array';
 	}
 
-	get errors() {
+	get errors(): IErrorType[] {
 		return super.errors.concat(this.#items.errors);
 	}
 
-	#items;
+	#items: ArrayPropertyItems;
 	get items() {
 		return this.#items;
 	}
 
-	constructor(path: string, branchesSpecs, branch, parent) {
-		super(path, branchesSpecs, branch, parent);
-		this.#items = new Items(this);
+	constructor(path: string, branches: BranchesSpecType, branch: string, parent: Property) {
+		super(path, branches, branch, parent);
+		this.#items = new ArrayPropertyItems(this);
 	}
 
 	_process() {
