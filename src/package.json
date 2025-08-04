@@ -11,7 +11,7 @@
 		"url": "git+https://github.com/beyondjs/config.git"
 	},
 	"homepage": "https://github.com/beyondjs/config#readme",
-	"modules": "main",
+	"modules": "modules",
 	"dependencies": {
 		"@beyond-js/dynamic-processor": "~1.0.3",
 		"@beyond-js/watchers": "~1.0.0",
