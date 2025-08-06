@@ -1,12 +1,18 @@
 import type { BranchType, BranchesSpecType, IErrorType, PropertyDataType, PropertyValueType } from '../types';
+import type { WatcherClient, ListenerType } from '@beyond-js/watchers/client';
 import { BranchesSpec } from './branches-specs';
 import { DynamicProcessor } from '@beyond-js/dynamic-processor/main';
 import { equal } from '@beyond-js/equal/main';
-import FileProperty from './file';
+import { FileData, DynamicFileObject } from '@beyond-js/file/dynamic';
 import { join, dirname } from 'path';
 
 // The autoincrement is just to have an id in the config objects that is useful in development to trace the code
 let autoincrement = 0;
+
+export /*bundle*/ interface IFileListenerSpec {
+	watcher?: WatcherClient;
+	listener?: ListenerType;
+}
 
 /**
  * The abstract `Property` class serves as the base for handling configuration data.
@@ -35,6 +41,8 @@ export default class Property extends DynamicProcessor() {
 	get branches() {
 		return this.#branches;
 	}
+
+	#watcher?: IFileListenerSpec;
 
 	#errors: IErrorType[] = [];
 	get errors() {
@@ -76,7 +84,7 @@ export default class Property extends DynamicProcessor() {
 	}
 
 	// An instance of `FileProperty` used to manage the configuration file if the data is a string.
-	#file: FileProperty;
+	#file?: DynamicFileObject;
 
 	// The raw data provided to the property. It can be a string (file path), an object, or undefined.
 	#data: PropertyDataType;
@@ -166,7 +174,13 @@ export default class Property extends DynamicProcessor() {
 	 * @throws {Error} Throws an error if `rootPath` and `parent` are both defined or both undefined.
 	 * @throws {Error} Throws an error if the specified `branch` is not found in the `branches` specification.
 	 */
-	constructor(rootPath: string, branches: BranchesSpecType, branch: string, parent: Property) {
+	constructor(
+		rootPath: string,
+		branches: BranchesSpecType,
+		branch: string,
+		parent: Property,
+		watcher?: IFileListenerSpec
+	) {
 		branch = branch ? branch : '';
 		if (typeof branch !== 'string') throw new Error('Invalid "branch" parameter');
 		if ((rootPath && parent) || (!rootPath && !parent)) throw new Error('Invalid parameters');
@@ -174,9 +188,9 @@ export default class Property extends DynamicProcessor() {
 
 		this.#rootPath = rootPath;
 		this.#branches = parent ? parent.branches : new BranchesSpec(branches);
-
 		this.#branch = branch;
 		this.#parent = parent;
+		this.#watcher = watcher;
 
 		if (!this.#branches.has(branch)) throw new Error(`Branch "${branch}" not found`);
 		this.#type = this.#branches.get(branch);
@@ -213,7 +227,8 @@ export default class Property extends DynamicProcessor() {
 			if (this.#file || typeof this.#data !== 'string') return;
 
 			const root = this.#parent ? this.#parent.path : this.#rootPath;
-			const file = (this.#file = new FileProperty(root, this.#data));
+			const spec = Object.assign({ file: new FileData(root, this.#data) }, this.#watcher || {});
+			const file = (this.#file = new DynamicFileObject(spec));
 			this.children.register(new Map([['file', { child: file }]]));
 		})();
 	}
