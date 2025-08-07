@@ -1,4 +1,5 @@
 import type { BranchesSpecType } from '../types';
+import type { IFileListenerSpec } from '../property';
 import { equal } from '@beyond-js/equal/main';
 import Property from '../property';
 import Properties from './properties';
@@ -25,8 +26,14 @@ export default class ObjectProperty extends Property {
 		return this.#properties.get(name);
 	}
 
-	constructor(path: string, branches?: BranchesSpecType, branch?: string, parent?: Property) {
-		super(path, branches, branch, parent);
+	constructor(
+		path: string,
+		branches?: BranchesSpecType,
+		branch?: string,
+		parent?: Property,
+		watcher?: IFileListenerSpec
+	) {
+		super(path, branches, branch, parent, watcher);
 		this.#properties = new Properties(this);
 	}
 

@@ -1,10 +1,13 @@
 import type Property from '../property';
 import type { IErrorType, PropertyArrayType } from '../types';
+import type { IFileListenerSpec } from '../property';
+import ObjectProperty from '../object';
 import { equal } from '@beyond-js/equal/main';
 import { dirname, join } from 'path';
 
 export default class ArrayPropertyItems extends Map<string, Property> {
 	#property: Property;
+	#watcher?: IFileListenerSpec;
 
 	#destroyed = false;
 	get destroyed() {
@@ -20,9 +23,10 @@ export default class ArrayPropertyItems extends Map<string, Property> {
 		return !this.errors.length;
 	}
 
-	constructor(property: Property) {
+	constructor(property: Property, watcher?: IFileListenerSpec) {
 		super();
 		this.#property = property;
+		this.#watcher = watcher;
 	}
 
 	update() {
@@ -49,7 +53,7 @@ export default class ArrayPropertyItems extends Map<string, Property> {
 
 			const property = this.has(path)
 				? this.get(path)
-				: new (require('../object'))(undefined, undefined, `${branch}/children`, this.#property);
+				: new ObjectProperty(undefined, undefined, `${branch}/children`, this.#property, this.#watcher);
 
 			updated.set(path, property);
 			property.data = data;

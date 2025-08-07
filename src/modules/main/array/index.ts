@@ -1,4 +1,5 @@
 import type { IErrorType, BranchesSpecType } from '../types';
+import type { IFileListenerSpec } from '../property';
 import Property from '../property';
 import ArrayPropertyItems from './items';
 
@@ -20,8 +21,14 @@ export default class ArrayProperty extends Property {
 		return this.#items;
 	}
 
-	constructor(path: string, branches: BranchesSpecType, branch: string, parent: Property) {
-		super(path, branches, branch, parent);
+	constructor(
+		path: string,
+		branches: BranchesSpecType,
+		branch: string,
+		parent: Property,
+		watcher?: IFileListenerSpec
+	) {
+		super(path, branches, branch, parent, watcher);
 		this.#items = new ArrayPropertyItems(this);
 	}
 
