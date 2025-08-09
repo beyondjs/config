@@ -1,11 +1,14 @@
 import type ArrayProperty from '../array';
 import type Property from '../property';
 import type { PropertyObjectType } from '../types';
+import { DynamicProcessorImplementation } from '@beyond-js/dynamic-processor/main';
 import { DynamicProcessor } from '@beyond-js/dynamic-processor/main';
 
 export /*bundle*/ type CollectionItemsType = Map<string, Property>;
 
-export default class ConfigCollection<T> extends DynamicProcessor(Map) {
+export default class ConfigCollection<ItemType extends { path: string }> extends DynamicProcessor(
+	Map<string, Record<string, any>>
+) {
 	get dp() {
 		return '@beyond-js/config/collection';
 	}
@@ -41,12 +44,20 @@ export default class ConfigCollection<T> extends DynamicProcessor(Map) {
 	}
 
 	// This method should be overridden
-	_createItem(config: PropertyObjectType) {
+	_createItem(config: PropertyObjectType): ItemType {
 		void config;
 		throw new Error('This method should be overridden');
 	}
 
-	_deleteItem(item: T) {
+	get(key: string): ItemType {
+		return <ItemType>super.get(key);
+	}
+
+	forEach(callback: (value: ItemType, key: string, map: Map<string, ItemType>) => void, thisArg?: any): void {
+		super.forEach((value, key, map) => callback(<ItemType>value, key, <Map<string, ItemType>>map), thisArg);
+	}
+
+	_deleteItem(item: ItemType) {
 		if (!(item instanceof DynamicProcessor)) return;
 		(item as any).destroy?.();
 	}
@@ -63,13 +74,13 @@ export default class ConfigCollection<T> extends DynamicProcessor(Map) {
 
 		const updated = new Map();
 		for (const [path, property] of items) {
-			const item = this.has(path) ? this.get(path) : this._createItem(property);
+			const item: Record<string, any> = this.has(path) ? this.get(path) : this._createItem(property);
 			if (item.path !== path) throw new Error(`Item must specify its path`);
 			updated.set(path, item);
 		}
 
 		// Destroy unused items
-		this.forEach(item => !updated.has(item.path) && this._deleteItem(item));
+		this.forEach(item => !updated.has(item.path) && this._deleteItem(<ItemType>item));
 
 		// Set the updated data into the collection
 		super.clear(); // Do not use this.clear(), as it would destroy libraries still being used
@@ -77,7 +88,12 @@ export default class ConfigCollection<T> extends DynamicProcessor(Map) {
 	}
 
 	clear() {
-		this.forEach(item => item.destroy());
+		// Destroy all items in the collection if they are instances of DynamicProcessor
+		this.forEach(item => {
+			if (!(item instanceof DynamicProcessorImplementation)) return;
+			(<DynamicProcessorImplementation>item).destroy();
+		});
+
 		super.clear();
 	}
 

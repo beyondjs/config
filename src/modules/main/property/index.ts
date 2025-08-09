@@ -3,7 +3,8 @@ import type { WatcherClient, ListenerType } from '@beyond-js/watchers/client';
 import { BranchesSpec } from './branches-specs';
 import { DynamicProcessor } from '@beyond-js/dynamic-processor/main';
 import { equal } from '@beyond-js/equal/main';
-import { FileData, DynamicFileObject } from '@beyond-js/file/dynamic';
+import { FileData } from '@beyond-js/file/data';
+import { DynamicFileObject } from '@beyond-js/file/dynamic';
 import { join, dirname } from 'path';
 
 // The autoincrement is just to have an id in the config objects that is useful in development to trace the code

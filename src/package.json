@@ -1,21 +1,44 @@
 {
 	"name": "@beyond-js/config",
-	"version": "0.0.7",
-	"license": "MIT",
 	"author": {
 		"name": "BeyondJS",
 		"email": "hello@beyondjs.com"
 	},
+	"version": "1.0.0",
+	"license": "MIT",
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/beyondjs/config.git"
+		"url": "https://github.com/beyondjs/config.git"
 	},
 	"homepage": "https://github.com/beyondjs/config#readme",
-	"modules": "modules",
+	"modules": {
+		"path": "modules"
+	},
+	"deployment": {
+		"distributions": [
+			{
+				"name": "node",
+				"platform": "node",
+				"ports": {
+					"bundles": 1110
+				}
+			},
+			{
+				"name": "node-ts",
+				"platform": "node",
+				"ports": {
+					"bundles": 1111
+				},
+				"ts": {
+					"compiler": "tsc"
+				}
+			}
+		]
+	},
 	"dependencies": {
-		"@beyond-js/dynamic-processor": "~1.0.3",
-		"@beyond-js/watchers": "~1.0.0",
+		"@beyond-js/dynamic-processor": "~1.0.7",
 		"@beyond-js/equal": "~1.0.0",
+		"@beyond-js/file": "~1.0.1",
 		"colors": "^1.4.0"
 	},
 	"devDependencies": {
