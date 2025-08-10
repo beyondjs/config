@@ -36,9 +36,9 @@
 		]
 	},
 	"dependencies": {
-		"@beyond-js/dynamic-processor": "~1.0.7",
-		"@beyond-js/equal": "~1.0.3",
-		"@beyond-js/file": "~1.0.1",
+		"@beyond-js/dynamic-processor": "~1.0.8",
+		"@beyond-js/equal": "~1.0.4",
+		"@beyond-js/file": "~1.0.3",
 		"colors": "^1.4.0"
 	},
 	"devDependencies": {
