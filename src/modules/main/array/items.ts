@@ -1,5 +1,5 @@
-import type Property from '../property';
-import type { IErrorType, PropertyArrayType } from '../types';
+import type { Property } from '../property';
+import type { IDiagnostic, PropertyArrayType } from '../types';
 import type { IFileListenerSpec } from '../property';
 import ObjectProperty from '../object';
 import { equal } from '@beyond-js/equal/main';
@@ -14,8 +14,8 @@ export default class ArrayPropertyItems extends Map<string, Property> {
 		return this.#destroyed;
 	}
 
-	#errors: IErrorType[] = [];
-	get errors() {
+	#errors: IDiagnostic[] = [];
+	get errors(): IDiagnostic[] {
 		return this.#errors;
 	}
 
@@ -34,7 +34,7 @@ export default class ArrayPropertyItems extends Map<string, Property> {
 		const { branch } = this.#property;
 
 		value = value ? value : [];
-		const errors: IErrorType[] = [];
+		const errors: IDiagnostic[] = [];
 		if (value && !(value instanceof Array)) {
 			const { branch } = this.#property;
 			const error = {

@@ -37,7 +37,7 @@ manual reloading.
 -   `#parent`: A reference to the parent property in the configuration hierarchy.
 -   `#branches`: A map that defines the expected types (`'array'` or `'object'`) for the configuration branches, managed
     by the `BranchesSpec` class.
--   `#errors`: An array of `IErrorType` errors that occur during configuration processing.
+-   `#errors`: An array of `IDiagnostic` errors that occur during configuration processing.
 -   `#warnings`: An array of warnings, similar to `#errors`.
 -   `#file`: An instance of `PropertyFile` used when `#data` is a string to manage the configuration file.
 -   `#rootPath`: The root configuration path, only defined for the top-level property.

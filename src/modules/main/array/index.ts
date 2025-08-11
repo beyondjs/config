@@ -1,6 +1,6 @@
-import type { IErrorType, BranchesSpecType } from '../types';
+import type { IDiagnostic, BranchesSpecType } from '../types';
 import type { IFileListenerSpec } from '../property';
-import Property from '../property';
+import { Property } from '../property';
 import ArrayPropertyItems from './items';
 
 export default class ArrayProperty extends Property {
@@ -12,7 +12,7 @@ export default class ArrayProperty extends Property {
 		return 'array';
 	}
 
-	get errors(): IErrorType[] {
+	get errors(): IDiagnostic[] {
 		return super.errors.concat(this.#items.errors);
 	}
 

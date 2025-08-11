@@ -1,5 +1,5 @@
 import type { BranchesSpec } from '../property/branches-specs';
-import ObjectProperty from '../object';
+import ObjectProperty from './';
 
 interface IError {
 	code: string;

@@ -1,4 +1,4 @@
-export interface IErrorType {
+export interface IDiagnostic {
 	code: string;
 	message: string;
 }

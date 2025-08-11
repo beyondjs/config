@@ -1,4 +1,4 @@
-import type { BranchType, BranchesSpecType, IErrorType, PropertyDataType, PropertyValueType } from '../types';
+import type { BranchType, BranchesSpecType, IDiagnostic, PropertyDataType, PropertyValueType } from '../types';
 import type { WatcherClient, ListenerType } from '@beyond-js/watchers/client';
 import { BranchesSpec } from './branches-specs';
 import { DynamicProcessor } from '@beyond-js/dynamic-processor/main';
@@ -20,7 +20,7 @@ export /*bundle*/ interface IFileListenerSpec {
  * It extends `DynamicProcessor` to enable automatic updates when its data or dependencies change.
  * This class handles file-based configurations, hierarchical structures, and error management.
  */
-export default class Property extends DynamicProcessor() {
+export class Property extends DynamicProcessor() {
 	get dp() {
 		return 'utils.config.property';
 	}
@@ -33,7 +33,7 @@ export default class Property extends DynamicProcessor() {
 
 	// Reference to the parent property in the configuration hierarchy.
 	#parent: Property;
-	get parent() {
+	get parent(): Property {
 		return this.#parent;
 	}
 
@@ -45,8 +45,8 @@ export default class Property extends DynamicProcessor() {
 
 	#watcher?: IFileListenerSpec;
 
-	#errors: IErrorType[] = [];
-	get errors() {
+	#errors: IDiagnostic[] = [];
+	get errors(): IDiagnostic[] {
 		return this.#errors;
 	}
 
@@ -54,8 +54,8 @@ export default class Property extends DynamicProcessor() {
 		return !this.errors.length;
 	}
 
-	#warnings: IErrorType[] = [];
-	get warnings() {
+	#warnings: IDiagnostic[] = [];
+	get warnings(): IDiagnostic[] {
 		return this.#warnings;
 	}
 
@@ -240,7 +240,7 @@ export default class Property extends DynamicProcessor() {
 	 * @returns A boolean indicating if the processed value has changed.
 	 */
 	_process(): boolean {
-		const done = ({ value, errors }: { value?: PropertyValueType; errors?: IErrorType[] }) => {
+		const done = ({ value, errors }: { value?: PropertyValueType; errors?: IDiagnostic[] }) => {
 			errors = errors ? errors : [];
 			const changed = !equal({ value: this.#value, errors: this.#errors }, { value, errors });
 			this.#value = value;

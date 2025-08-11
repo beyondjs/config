@@ -1,6 +1,6 @@
 import type ArrayProperty from '../array';
-import type Property from '../property';
-import type { PropertyObjectType } from '../types';
+import type { Property } from '../property';
+import type { PropertyObjectType, IDiagnostic } from '../types';
 import { DynamicProcessorImplementation } from '@beyond-js/dynamic-processor/main';
 import { DynamicProcessor } from '@beyond-js/dynamic-processor/main';
 
@@ -18,11 +18,11 @@ export default class ConfigCollection<ItemType extends { path: string }> extends
 		return this.#property;
 	}
 
-	get errors() {
+	get errors(): IDiagnostic[] {
 		return this.#property.errors;
 	}
 
-	get warnings() {
+	get warnings(): IDiagnostic[] {
 		return this.#property.warnings;
 	}
 

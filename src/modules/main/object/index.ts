@@ -1,7 +1,7 @@
 import type { BranchesSpecType } from '../types';
 import type { IFileListenerSpec } from '../property';
 import { equal } from '@beyond-js/equal/main';
-import Property from '../property';
+import { Property } from '../property';
 import Properties from './properties';
 
 export default class ObjectProperty extends Property {
