@@ -228,7 +228,10 @@ export class Property extends DynamicProcessor() {
 			if (this.#file || typeof this.#data !== 'string') return;
 
 			const root = this.#parent ? this.#parent.path : this.#rootPath;
-			const spec = Object.assign({ file: new FileData(root, this.#data) }, this.#watcher || {});
+			const path = join(root, this.#data);
+			const fdata = new FileData(root, path);
+
+			const spec = Object.assign({ file: fdata }, this.#watcher || {});
 			const file = (this.#file = new DynamicFileObject(spec));
 			this.children.register(new Map([['file', { child: file }]]));
 		})();

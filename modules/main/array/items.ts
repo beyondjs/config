@@ -1,11 +1,11 @@
 import type { Property } from '../property';
 import type { IDiagnostic, PropertyArrayType } from '../types';
 import type { IFileListenerSpec } from '../property';
-import ObjectProperty from '../object';
+import { ObjectProperty } from '../object';
 import { equal } from '@beyond-js/equal/main';
 import { dirname, join } from 'path';
 
-export default class ArrayPropertyItems extends Map<string, Property> {
+export class ArrayPropertyItems extends Map<string, Property> {
 	#property: Property;
 	#watcher?: IFileListenerSpec;
 

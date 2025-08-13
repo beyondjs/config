@@ -1,7 +1,7 @@
 import type { BranchesSpecType } from './types';
 import type { IFileListenerSpec } from './property';
-import ObjectProperty from './object';
-import Collection from './collection';
+import { ObjectProperty } from './object';
+import { ConfigCollection as Collection } from './collection';
 
 export /*bundle*/ class Config extends ObjectProperty {
 	constructor(rootPath: string, branches?: BranchesSpecType, watcher?: IFileListenerSpec) {

@@ -1,9 +1,9 @@
 import type { IDiagnostic, BranchesSpecType } from '../types';
 import type { IFileListenerSpec } from '../property';
 import { Property } from '../property';
-import ArrayPropertyItems from './items';
+import { ArrayPropertyItems } from './items';
 
-export default class ArrayProperty extends Property {
+export class ArrayProperty extends Property {
 	get dp() {
 		return 'utils.config.property.array';
 	}
@@ -17,7 +17,7 @@ export default class ArrayProperty extends Property {
 	}
 
 	#items: ArrayPropertyItems;
-	get items() {
+	get items(): ArrayPropertyItems {
 		return this.#items;
 	}
 

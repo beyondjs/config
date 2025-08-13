@@ -6,8 +6,10 @@ BEE('http://localhost:1110', { inspect: 4000 });
 (async () => {
 	const { Config } = await bimport('@beyond-js/config/main');
 
-	// Process the settings for the package-a and the workspace set in the current working directory
-	const cwd = process.cwd();
+	const path = join(__dirname, 'files');
+	const config = new Config(path, { '/project': 'object', '/modules': 'array' });
+	config.data = 'config.json';
 
-	console.log(cwd, Config);
+	await config.ready;
+	console.log('Config data:', config.data.value);
 })().catch(exc => console.error(exc.stack));

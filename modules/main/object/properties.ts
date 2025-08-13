@@ -1,12 +1,13 @@
 import type { BranchesSpec } from '../property/branches-specs';
-import ObjectProperty from './';
+import type { ObjectProperty } from './';
+import type { ArrayProperty } from '../array';
 
 interface IError {
 	code: string;
 	text: string;
 }
 
-export default class extends Map {
+export class Properties extends Map<string, ObjectProperty | ArrayProperty> {
 	#property: ObjectProperty;
 	#destroyed = false;
 	get destroyed() {
@@ -25,12 +26,14 @@ export default class extends Map {
 	#initialise(branches: BranchesSpec) {
 		branches.forEach((type, branch) => {
 			if (!branch.startsWith(`${this.#property.branch}/`)) return;
-			const split = branch.substr(this.#property.branch.length + 1).split('/');
+			const split = branch.slice(this.#property.branch.length + 1).split('/');
 			if (split.length !== 1) return;
 			const child = split[0];
 
 			// Variable type can be 'object' or 'array'
-			const property = new (require(`../${type}`))(undefined, undefined, branch, this.#property);
+			const pmod = require(`../${type}`);
+			const Property = type === 'object' ? pmod.ObjectProperty : pmod.ArrayProperty;
+			const property = new Property(undefined, undefined, branch, this.#property);
 			this.set(child, property);
 		});
 	}

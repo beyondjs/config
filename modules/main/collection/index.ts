@@ -1,4 +1,4 @@
-import type ArrayProperty from '../array';
+import type { ArrayProperty } from '../array';
 import type { Property } from '../property';
 import type { PropertyObjectType, IDiagnostic } from '../types';
 import { DynamicProcessorImplementation } from '@beyond-js/dynamic-processor/main';
@@ -6,7 +6,7 @@ import { DynamicProcessor } from '@beyond-js/dynamic-processor/main';
 
 export /*bundle*/ type CollectionItemsType = Map<string, Property>;
 
-export default class ConfigCollection<ItemType extends { path: string }> extends DynamicProcessor(
+export class ConfigCollection<ItemType extends { path: string }> extends DynamicProcessor(
 	Map<string, Record<string, any>>
 ) {
 	get dp() {
@@ -14,7 +14,7 @@ export default class ConfigCollection<ItemType extends { path: string }> extends
 	}
 
 	#property: ArrayProperty;
-	get property() {
+	get property(): ArrayProperty {
 		return this.#property;
 	}
 

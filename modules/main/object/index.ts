@@ -2,9 +2,9 @@ import type { BranchesSpecType } from '../types';
 import type { IFileListenerSpec } from '../property';
 import { equal } from '@beyond-js/equal/main';
 import { Property } from '../property';
-import Properties from './properties';
+import { Properties } from './properties';
 
-export default class ObjectProperty extends Property {
+export class ObjectProperty extends Property {
 	get dp() {
 		return 'utils.config.property.object';
 	}
@@ -14,7 +14,7 @@ export default class ObjectProperty extends Property {
 	}
 
 	#properties: Properties;
-	get properties() {
+	get properties(): Properties {
 		return this.#properties;
 	}
 
