@@ -46,7 +46,7 @@ export class Properties extends Map<string, ObjectProperty | ArrayProperty> {
 
 	update() {
 		if (this.#destroyed) throw new Error('Properties are destroyed');
-		let { value } = this.#property;
+		let { preprocessed: value } = this.#property;
 
 		const values = typeof value === 'object' ? new Map(Object.entries(value)) : new Map();
 		for (const [branch, property] of this) {

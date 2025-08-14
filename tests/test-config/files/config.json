@@ -1,5 +1,5 @@
 {
 	"hello": "world",
-	"project": "project/details.json",
+	"project": "project.json",
 	"modules": ["modules/users/module.json", "modules/invoices/module.json"]
 }

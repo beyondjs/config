@@ -4,7 +4,7 @@
 		"name": "BeyondJS",
 		"email": "hello@beyondjs.com"
 	},
-	"version": "1.0.2",
+	"version": "1.0.3",
 	"license": "MIT",
 	"repository": {
 		"type": "git",
@@ -37,8 +37,8 @@
 	},
 	"dependencies": {
 		"@beyond-js/dynamic-processor": "~1.0.8",
-		"@beyond-js/equal": "~1.0.4",
-		"@beyond-js/file": "~1.0.3",
+		"@beyond-js/equal": "~1.0.5",
+		"@beyond-js/file": "~1.0.4",
 		"colors": "^1.4.0"
 	},
 	"devDependencies": {
