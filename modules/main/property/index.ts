@@ -10,6 +10,9 @@ import { join, dirname } from 'path';
 // The autoincrement is just to have an id in the config objects that is useful in development to trace the code
 let autoincrement = 0;
 
+/**
+ * How a file-backed property follows its file: a watcher client, or a listener it shares
+ */
 export /*bundle*/ interface IFileListenerSpec {
 	watcher?: WatcherClient;
 	listener?: ListenerType;

@@ -3,6 +3,9 @@ import type { Property } from '../property';
 import type { PropertyObjectType, IDiagnostic } from '../types';
 import { DynamicProcessor } from '@beyond-js/dynamic-processor/main';
 
+/**
+ * The items of a collection by their key
+ */
 export /*bundle*/ type CollectionItemsType = Map<string, Property>;
 
 export class ConfigCollection<ItemType extends { path: string }> extends DynamicProcessor(

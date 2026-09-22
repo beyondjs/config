@@ -3,6 +3,9 @@ export interface IDiagnostic {
 	message: string;
 }
 
+/**
+ * The type of a declared configuration branch
+ */
 export /*bundle*/ type BranchType = 'array' | 'object';
 
 /**
