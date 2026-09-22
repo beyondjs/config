@@ -1,80 +1,45 @@
 # Configuration architecture
 
-Config resolves a root JSON object into independently addressable object/array branches. Each branch is a DynamicProcessor with its own data, value, errors and readiness. A declared branch may contain inline data or refer to a file; ordinary undeclared string fields remain ordinary values. Config does not automatically treat every string anywhere in JSON as a file reference.
+Config resolves a root JSON document into independently addressable object and array branches. Each branch is a Dynamic Processor with its own data, value, errors and readiness. A declared branch may hold inline data or name a file; undeclared string fields are ordinary values.
 
 ## Public module and object model
 
-The [manifest](../modules/main/module.json) declares `@beyond-js/config/main`. [Entry source](../modules/main/index.ts) marks `Config` and `ConfigCollection` public; [types](../modules/main/types.ts) mark BranchType, BranchesSpecType, PropertyObjectType, PropertyArrayItemType, PropertyArrayType, PropertyDataType and PropertyValueType. `IFileListenerSpec` and `CollectionItemsType` are also marked in their internal files. IDiagnostic and the internal Property/ObjectProperty/ArrayProperty classes are not independently published modules.
+[main/module.json](../modules/main/module.json) declares `@beyond-js/config/main`. [The entry](../modules/main/index.ts) marks `Config` and `ConfigCollection` public; [types.ts](../modules/main/types.ts) marks the branch, property and value types. `Property`, `ObjectProperty`, `ArrayProperty` and their collections are internal.
 
-`new Config(rootPath, branches?, watcherSpec?)` extends ObjectProperty. `rootPath` is the configuration directory. Assign `config.data` a filename string; a root inline object assignment throws. Its inherited public surfaces include `data`, `value`, `path`, `rootPath`, `branch`, `type`, `parent`, `id`, `branches`, `errors`, `warnings`, `valid` and DynamicProcessor readiness/events. Object properties add `get(name)`, `has(name)`, `properties` and `preprocessed`. Array properties add `items` and aggregate item-collection errors. Validity checks this property's errors, not all descendants automatically.
+`new Config(rootPath, branches?, watcher?)` extends `ObjectProperty`. `rootPath` is the configuration directory; `branches` maps branch paths (`/project`, `/modules`, `/modules/children/settings`) to `object` or `array`; `watcher` is `{ watcher?, listener? }` as `@beyond-js/file/dynamic` accepts it. Assign `config.data` a file name; a root given an inline object throws.
 
-[BranchesSpec](../modules/main/property/branches-specs.ts) creates a Map from declared paths, defaults `''` to object, and adds `<array-branch>/children` as object. Types must be `array` or `object`. The supplied branches object is mutated to add the root entry; automatic array-child entries and explicit entries follow insertion order. Declaring a deeply nested branch alone does not synthesize all missing intermediate object branches.
+[BranchesSpec](../modules/main/property/branches-specs.ts) defaults the root to `object` and adds `<array>/children` as `object` for every array branch. Types must be `array` or `object`. Intermediate branches are not synthesized: declare each level.
 
-For example, `{ '/project': 'object', '/modules': 'array', '/modules/children/settings': 'object' }` declares a project object, a modules array and settings under each module item. `get('project')` returns a Property, not its resolved plain value. There is no slash-path getter; traverse child `get` calls.
+A property exposes `data`, `value`, `path`, `rootPath`, `branch`, `type`, `parent`, `id`, `branches`, `errors`, `warnings`, `valid`, `watcher` and the Dynamic Processor lifecycle. An object property adds `get(name)`, `has(name)`, `properties` and `preprocessed`; an array property adds `items`. `valid` reads the property's own errors; descendants are read individually.
 
 ## Data, values and paths
 
-[Property.data](../modules/main/property/index.ts) computes branch path before comparing raw data with the previous value. For string data, path is the directory of `join(parent.path || rootPath, data)`; the actual file is joined from that root and filename. For inline objects, a truthy `path` field changes the branch directory and is deleted from the supplied object. Arrays also pass through this object branch. This mutates caller-owned data. Null passes the JavaScript object-type check but property access on null throws.
+Assigning `data` to a property:
 
-The `path` control field is handled by the **data setter for inline objects**, not by a second pass over parsed file content. A `path` field inside root JSON does not automatically redefine the root. Paths are joined, not validated as a containment boundary. FileData's own path validation is also limited; reject unwanted paths at the owning application boundary.
+1. An inline object is copied before its `path` field is taken from it, so the caller's object, which may be the parsed value of a file, is never mutated.
+2. The branch path is computed: for a file name, the directory of the file joined to the parent's path or the root; for an inline object with `path`, that path joined to the parent's; otherwise the parent's path.
+3. When neither the data nor the path changed, nothing happens; otherwise the property is invalidated. A change of the path alone is a change.
 
-[ObjectProperty](../modules/main/object/index.ts) exposes a shallow copy with declared child branch names removed as `value`. `preprocessed` holds a shallow copy before removal. [Properties](../modules/main/object/properties.ts) constructs direct child properties from the branch schema, then assigns child data from preprocessed. Declared branches are therefore accessed separately; `config.value` is not a recursively merged configuration tree.
+`ObjectProperty.value` is a shallow copy of the parsed value with the declared child branches removed; `preprocessed` is the copy before removal. The declared branches always receive their data from `preprocessed` after a processing, whether or not the own value changed, and each compares and decides for itself: a change confined to a declared branch reaches it, and a root that holds declared branches only still propagates on its first processing. The own `change` of an object announces the change of its own value.
 
-The file-backed path creates a DynamicFileObject from `@beyond-js/file/dynamic`; it parses object-shaped JSON. A file containing a top-level array is rejected by that dependency, even when the property schema says array. Inline arrays can be used as object fields. JSON null is accepted by the current file dependency and is not a valid substitute for a normal configuration object.
+A file-backed branch owns a `DynamicFileObject` from `@beyond-js/file/dynamic`, registered as its child and created with the watcher specification the root received. That file is released when the data no longer names the same absolute file: a same-directory replacement reads the new file, and a branch turned inline holds no file. A document that is not an object is the file's diagnostic; `null` data is `INVALID_TYPE` of the property.
 
-## Processing and change propagation
-
-1. Assigning changed data invalidates its Property.
-2. `_begin()` waits for parent readiness where applicable.
-3. `_prepared()` registers a DynamicFileObject child when data is a filename.
-4. `_process()` obtains inline data or file value/errors; ObjectProperty separates declared branches, while ArrayProperty updates its item map.
-5. Consumers await each needed property's ready state and inspect its diagnostics. DynamicProcessor owns scheduling and events; it does not make Config's incomplete update paths correct automatically.
-
-Known update limitations:
-
-- ObjectProperty returns before updating preprocessed/children when its branch-stripped value is unchanged. A change confined to declared branches can be lost. A root containing only declared branches can likewise skip initial propagation because the remaining object compares equal to an empty previous value.
-- Property recomputes path and removes an inline path field before data equality comparison. Path-only edits can change path without invalidating dependents.
-- File replacement uses `file.root === root || file.relative === data` as its retain condition. A same-root filename change therefore retains the old file. `file.relative` is an object, not a filename string. Switching from a filename to inline data may also keep an irrelevant file child alive.
-- Warnings are exposed but this implementation does not populate a warning pipeline. Child errors do not automatically become root errors. ObjectProperty can suppress a processing-change result even when only diagnostics changed.
-
-These are implementation limitations to repair before relying on dynamic edits. Do not work around them by assuming ready or change events imply all branches converged.
+Paths are joined, not validated as a containment boundary; an application that accepts documents from outside validates them at its own boundary.
 
 ## Arrays and item identity
 
-[ArrayPropertyItems](../modules/main/array/items.ts) keys items by **absolute directory**, not array index, item name or full filename. A string uses `dirname(data)`; an inline object requires a truthy `path`. Inline objects without path are silently skipped. Two filenames in one directory collide in the same key; the updated map retains one entry and may create an unused duplicate property on first processing. A filename such as `module.json` has directory `.` and shares the parent's directory identity.
-
-Items are ObjectProperty instances using the `<branch>/children` schema. Missing/falsy array data becomes an empty list. A truthy nonarray produces `INVALID_TYPE` and an empty item map. Removed items are destroyed. Change reporting compares key membership/count and errors, not every child's processed value. Reordering alone is not reported as a change, although insertion order can change when the map is rebuilt.
-
-Inline path fields are deleted during assignment. Reusing the same mutated input object or reprocessing the same array can remove the identity used to include it. Consumers should not infer stable array semantics from the PropertyArrayType alias alone.
+[ArrayPropertyItems](../modules/main/array/items.ts) keys items by the absolute directory of each entry: the directory of a file name, or the `path` of an inline object, joined to the array's path. An inline object without `path` is skipped; two file names in one directory collide on one key. Items are object properties of the `<branch>/children` schema, created with the watcher specification. A falsy array is empty; a truthy non-array is `INVALID_TYPE` with no items. An item whose key left the array is destroyed; reordering alone is not a change.
 
 ## Collection adapters
 
-`ConfigCollection` is exported from `@beyond-js/config/main`, not a separate `/collection` module. It extends DynamicProcessor applied to Map and receives an ArrayProperty. It registers that property as a child, proxies its errors/warnings/validity, and offers these hooks:
+[ConfigCollection](../modules/main/collection/index.ts) extends `DynamicProcessor(Map)` over an array property and is described in [the collection guide](../collection.md). Its removal hook is structural: an item with a `destroy()` is destroyed, which covers Dynamic Processor mixin objects, which are not instances of a class the collection could test.
 
-| Hook | Actual argument/result |
-| --- | --- |
-| `_processConfig(items)` | A new shallow Map of path → Property; return a filtered/transformed Map, or falsy for empty. |
-| `_createItem(config)` | Receives the **Property instance**, despite a broad PropertyObjectType annotation; return an item whose `path` equals its map key. |
-| `_deleteItem(item)` | Intended removal hook; default implementation tests `instanceof DynamicProcessor`, even though DynamicProcessor is a class factory. |
+## Watching and destruction
 
-Existing items are retained by path and are not passed to `_createItem` again when values change. An item must observe its Property or participate in its dependency lifecycle. The collection does not await individual item-property readiness before construction. Invalid source property calls clear. `clear()` destroys only instances of DynamicProcessorImplementation; arbitrary objects with a destroy method are not destroyed. The current DynamicProcessor implementation is an arrow-function mixin factory; using it on the right-hand side of instanceof can throw for an object because the factory has no constructor prototype. Its mixin instances wrap, rather than inherit from, DynamicProcessorImplementation, so clear's separate implementation-class check also skips those normal instances. These are consumer/dependency compatibility defects. Override ownership deliberately rather than assuming every removed item is released.
+The watcher specification given to the root reaches every file-backed descendant: object branches, array items and their branches. With a `watcher`, each file creates a listener of its own directory and releases it; with a `listener`, each file shares it. Config starts no watcher service.
 
-The [collection guide](../collection.md) gives a minimal adapter shape and explains these constraints.
+`destroy()` of any property destroys its processor, its file and its children, and is ignored when repeated. Destroying the root destroys everything under it.
 
-## Watchers and destruction
+## Build and validation
 
-`IFileListenerSpec` contains optional `watcher` and `listener`. Config passes its root spec to its own file, but Properties constructs child branches without forwarding that spec, and ArrayProperty constructs its item collection without a watcher spec. Nested files are therefore not watched automatically.
-
-The referenced File utility additionally returns from its listener constructor unless **both** watcher and listener are supplied; watcher-only setup does not currently watch. Config itself neither starts a watcher service nor creates a filesystem monitor. Applications must define watcher lifecycle and repair the forwarding/guard paths to provide reliable change propagation.
-
-Property.destroy destroys its file but omits DynamicProcessor's super.destroy. Object/Array subclasses then destroy child collections. Those collections reject repeated destroy calls. Full processor subscription teardown is therefore incomplete, and destroy is not uniformly idempotent. ConfigCollection does call its base destroy, then clear; item and property ownership still require deliberate handling.
-
-## Build and tests
-
-[package.json](../package.json) supplies Beyond authoring configuration and Node/Node-ts distribution ports 1110/1111. [beyond.json](../beyond.json) selects that manifest. The checkout has no npm scripts or Node root export entry. Use compiled public module `@beyond-js/config/main`, not the old README's root CommonJS import. The utility depends on DynamicProcessor, Equal and File; watcher types are development dependencies. A fresh checkout needs a compatible Beyond compiler/loader and those dependencies; no sibling directory is required.
-
-The [devcontainer](../.devcontainer/Dockerfile) uses Node 18/Beyond 1.2.4. The [publish workflow](../.github/workflows/publish.yml) builds an npm distribution although the manifest does not explicitly declare one, so compiler convention must be checked before using that recipe. It is not a general local development command.
-
-[Current test script](../tests/test-config/index.js) uses legacy BEE/1110/inspector 4000, prints property state and catches exceptions. Its fixture references an absent invoices module. It does not assert branch-only updates, watch behavior or cleanup. Retained tests under trash import a removed relative root entry and use old application manifests; they are historical fixtures, not an active test runner.
-
-Acceptance should cover initial branch-only objects, independent branch/file edits, same-root file replacement, inline path changes, array collisions/removals, parse-error recovery, descendant diagnostics, watcher propagation and destruction. Preserve the Config → Property → Properties/Items → Collection structure while correcting those contracts.
+[package.json](../package.json) declares the Dynamic Processor, Equal and File dependencies and the Node distributions; [beyond.json](../beyond.json) selects it. The tests under [tests/](../tests/README.md) import the compiled public module; [validation](validation.md) maps each contract to its test and states what is not established.

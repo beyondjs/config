@@ -1,7 +1,6 @@
 import type { ArrayProperty } from '../array';
 import type { Property } from '../property';
 import type { PropertyObjectType, IDiagnostic } from '../types';
-import { DynamicProcessorImplementation } from '@beyond-js/dynamic-processor/main';
 import { DynamicProcessor } from '@beyond-js/dynamic-processor/main';
 
 export /*bundle*/ type CollectionItemsType = Map<string, Property>;
@@ -57,9 +56,15 @@ export class ConfigCollection<ItemType extends { path: string }> extends Dynamic
 		super.forEach((value, key, map) => callback(<ItemType>value, key, <Map<string, ItemType>>map), thisArg);
 	}
 
+	/**
+	 * Releases an item that left the collection. An item that can be destroyed is destroyed: the mixin
+	 * objects of the dynamic processor are not instances of a class this collection could test, so the
+	 * check is structural.
+	 */
 	_deleteItem(item: ItemType) {
-		if (!(item instanceof DynamicProcessor)) return;
-		(item as any).destroy?.();
+		const destroyable = item as unknown as { destroy?: () => void; destroyed?: boolean };
+		if (typeof destroyable?.destroy !== 'function' || destroyable.destroyed) return;
+		destroyable.destroy();
 	}
 
 	_process() {
@@ -88,16 +93,12 @@ export class ConfigCollection<ItemType extends { path: string }> extends Dynamic
 	}
 
 	clear() {
-		// Destroy all items in the collection if they are instances of DynamicProcessor
-		this.forEach(item => {
-			if (!(item instanceof DynamicProcessorImplementation)) return;
-			(<DynamicProcessorImplementation>item).destroy();
-		});
-
+		this.forEach(item => this._deleteItem(item));
 		super.clear();
 	}
 
 	destroy() {
+		if (this.destroyed) return;
 		super.destroy();
 		this.clear();
 	}

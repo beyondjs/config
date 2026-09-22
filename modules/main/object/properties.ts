@@ -1,4 +1,5 @@
 import type { BranchesSpec } from '../property/branches-specs';
+import type { IFileListenerSpec } from '../property';
 import type { ObjectProperty } from './';
 import type { ArrayProperty } from '../array';
 
@@ -9,6 +10,7 @@ interface IError {
 
 export class Properties extends Map<string, ObjectProperty | ArrayProperty> {
 	#property: ObjectProperty;
+	#watcher?: IFileListenerSpec;
 	#destroyed = false;
 	get destroyed() {
 		return this.#destroyed;
@@ -33,14 +35,15 @@ export class Properties extends Map<string, ObjectProperty | ArrayProperty> {
 			// Variable type can be 'object' or 'array'
 			const pmod = require(`../${type}`);
 			const Property = type === 'object' ? pmod.ObjectProperty : pmod.ArrayProperty;
-			const property = new Property(undefined, undefined, branch, this.#property);
+			const property = new Property(undefined, undefined, branch, this.#property, this.#watcher);
 			this.set(child, property);
 		});
 	}
 
-	constructor(property: ObjectProperty) {
+	constructor(property: ObjectProperty, watcher?: IFileListenerSpec) {
 		super();
 		this.#property = property;
+		this.#watcher = watcher;
 		this.#initialise(this.#property.branches);
 	}
 

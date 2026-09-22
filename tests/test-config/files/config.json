@@ -1,5 +1,0 @@
-{
-	"hello": "world",
-	"project": "project.json",
-	"modules": ["modules/users/module.json", "modules/invoices/module.json"]
-}

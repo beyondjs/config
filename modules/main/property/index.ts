@@ -43,7 +43,11 @@ export class Property extends DynamicProcessor() {
 		return this.#branches;
 	}
 
+	// The watcher specification given to the root, passed down to every file-backed descendant
 	#watcher?: IFileListenerSpec;
+	get watcher(): IFileListenerSpec | undefined {
+		return this.#watcher;
+	}
 
 	#errors: IDiagnostic[] = [];
 	get errors(): IDiagnostic[] {
@@ -130,31 +134,29 @@ export class Property extends DynamicProcessor() {
 			throw new Error('Data must be the file to be processed when refers to a root configuration object');
 		}
 
-		// Determine the property's path.
-		// If the data is an object, it checks for a 'path' property to resolve the path relative
-		// to the parent or root path. The 'path' property is then deleted from the object to prevent it
-		// from being part of the value. If the data is a string (a file path), it calculates the directory
-		// of that file to be used as the property's path.
-		this.#path = (() => {
-			if (!['object', 'string'].includes(typeof data)) return;
+		// An inline object is copied before its `path` control field is taken from it, so the object of the
+		// caller (which may be the parsed value of a file) is never mutated
+		const inline = data !== null && typeof data === 'object' && !Array.isArray(data);
+		if (inline) data = Object.assign({}, data);
 
+		// Determine the property's path. An inline object may carry a 'path' field that relocates the
+		// branch relative to the parent or root path; a file name relocates it to the directory of the file.
+		const path = (() => {
 			const root = this.#parent ? this.#parent.path : this.#rootPath;
-
-			if (typeof data === 'object') {
+			if (inline) {
 				const d = <{ path?: string }>data;
 				const path = d.path ? join(root, d.path) : root;
 				delete (data as any).path;
 				return path;
-			} else if (typeof data === 'string') {
-				return dirname(join(root, data));
 			}
+			if (typeof data === 'string') return dirname(join(root, data));
+			return root;
 		})();
 
-		// If the data has not changed, do nothing.
-		// Once the path is set, and removed from the data, then we can compare with the previous data
-		// to check if the configuration has changed
-		if (equal(data, this.#data)) return;
+		// If neither the data nor the path changed, nothing is reprocessed
+		if (path === this.#path && equal(data, this.#data)) return;
 
+		this.#path = path;
 		this.#data = data;
 
 		// Invalidate the processor to trigger a re-processing cycle.
@@ -210,15 +212,15 @@ export class Property extends DynamicProcessor() {
 	 * It manages the `FileProperty` instance, creating or destroying it as needed based on the data type.
 	 */
 	_prepared() {
-		// Unregister the old file child if its path has changed.
+		// Release the file child when the data no longer names that same file.
 		(() => {
 			if (!this.#file) return;
 
 			const file = this.#file;
 			const root = this.#parent ? this.#parent.path : this.#rootPath;
-			if (file.root === root || file.relative === this.#data) return;
+			if (typeof this.#data === 'string' && file.file === join(root, this.#data)) return;
 
-			this.children.unregister(['file']);
+			this.children.unregister(['file'], false);
 			this.#file = void 0;
 			file.destroy();
 		})();
@@ -251,7 +253,11 @@ export class Property extends DynamicProcessor() {
 			return changed;
 		};
 
-		if (['object', 'undefined'].includes(typeof this.#data)) {
+		if (this.#data === null) {
+			const code = 'INVALID_TYPE';
+			const message = 'Configuration value is invalid, it is null';
+			return done({ errors: [{ code, message }] });
+		} else if (['object', 'undefined'].includes(typeof this.#data)) {
 			return done({ value: <PropertyValueType>this.#data });
 		} else if (typeof this.#data === 'string') {
 			const file = this.#file;
@@ -266,7 +272,13 @@ export class Property extends DynamicProcessor() {
 		}
 	}
 
+	/**
+	 * Releases the processor and the file it owns. Destroying twice is ignored.
+	 */
 	destroy() {
+		if (this.destroyed) return;
+		super.destroy();
 		this.#file?.destroy();
+		this.#file = void 0;
 	}
 }

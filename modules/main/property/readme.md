@@ -1,5 +1,5 @@
 # Property
 
-Property owns raw data, processed value/errors, branch context and an optional DynamicFileObject dependency. Root data must be a filename; child data can be inline or file-backed. It extends DynamicProcessor and is an internal class of `@beyond-js/config/main`.
+Property owns raw data, the processed value and errors, the branch context, the watcher specification and an optional `DynamicFileObject` child. Root data must be a file name; child data can be inline or file-backed. Inline data is copied before its `path` field is read; a path-only change invalidates; the file child is released when the data no longer names the same file; `destroy()` destroys the processor and the file and is ignored when repeated.
 
-See [data and paths](../../../docs/architecture.md#data-values-and-paths), [processing](../../../docs/architecture.md#processing-and-change-propagation) and [destruction](../../../docs/architecture.md#watchers-and-destruction) for exact semantics. Path-only invalidation, same-root file replacement, nested watcher forwarding and base cleanup require repairs; the presence of dynamic processors does not guarantee automatic convergence.
+See [data and paths](../../../docs/architecture.md#data-values-and-paths) and [watching and destruction](../../../docs/architecture.md#watching-and-destruction).

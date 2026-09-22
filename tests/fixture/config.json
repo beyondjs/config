@@ -1,0 +1,6 @@
+{
+	"hello": "world",
+	"project": "project.json",
+	"inline": { "title": "inline branch" },
+	"modules": ["modules/users/module.json", { "path": "modules/inline-module", "name": "inline module" }, "modules/invoices/module.json"]
+}

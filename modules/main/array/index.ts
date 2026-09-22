@@ -29,7 +29,7 @@ export class ArrayProperty extends Property {
 		watcher?: IFileListenerSpec
 	) {
 		super(path, branches, branch, parent, watcher);
-		this.#items = new ArrayPropertyItems(this);
+		this.#items = new ArrayPropertyItems(this, this.watcher);
 	}
 
 	_process() {
@@ -38,6 +38,7 @@ export class ArrayProperty extends Property {
 	}
 
 	destroy() {
+		if (this.destroyed) return;
 		super.destroy();
 		this.#items.destroy();
 	}

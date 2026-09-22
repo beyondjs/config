@@ -50,7 +50,7 @@ export class ObjectProperty extends Property {
 		watcher?: IFileListenerSpec
 	) {
 		super(path, branches, branch, parent, watcher);
-		this.#properties = new Properties(this);
+		this.#properties = new Properties(this, this.watcher);
 	}
 
 	/**
@@ -90,16 +90,18 @@ export class ObjectProperty extends Property {
 			return { changed, value, preprocessed };
 		})();
 
-		if (!changed) return false;
-
 		this.#preprocessed = preprocessed;
 		this.#value = value;
 
-		// Properties must be updated after the value (preprocessed) is set
+		// The declared branches receive their data whether or not the own value of this object changed:
+		// each of them compares and decides for itself. Properties are updated after preprocessed is set.
 		this.#properties.update();
+
+		return changed;
 	}
 
 	destroy() {
+		if (this.destroyed) return;
 		super.destroy();
 		this.#properties.destroy();
 	}
